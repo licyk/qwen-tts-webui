@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools", "pip", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qwen-tts-webui"
+description = "基于 Qwen TTS 的 WebUI"
+requires-python = ">=3.10"
+readme = { content-type = "text/markdown", file = "README.md" }
+license = "GPL-3.0"
+dynamic = ["version"]
+authors = [ {name = "licyk"} ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["qwen_tts_webui*"]
+exclude = ["tests*", "docs*", "*__pycache__*", "*.pyc", "*.pyo", "*.pyd", ".git*", "__pycache__"]
+namespaces = true
+
+#[tool.setuptools.package-data]
+#qwen_tts_webui = ["**/*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["__pycache__", "*.pyc", "*.pyo", "*.pyd", ".git*", ".github*", "tests*", "docs*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "qwen_tts_webui.version.VERSION" }
+
+[tool.pylint]
+disable = [
+    "missing-timeout",
+    "too-many-lines",
+    "import-outside-toplevel",
+    "broad-exception-caught",
+    "broad-exception-raised",
+    "subprocess-run-check",
+    "keyword-arg-before-vararg",
+    "fixme"
+]
+
+[tool.pylint.format]
+max-line-length = 180
+ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
+
+[tool.ruff]
+line-length = 180
+indent-width = 4
+lint.ignore = [
+    "E402" # module-import-not-at-top-of-file
+]
