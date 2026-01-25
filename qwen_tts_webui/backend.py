@@ -131,7 +131,7 @@ class QwenTTSBackend:
             self.unload_model()
             raise e
 
-        logger.info("%s 模型加载完成, 当前剩余的显存: %s", self.model_name, get_free_memory() / (1024 * 1024))
+        logger.info("%s 模型加载完成, 当前剩余的显存: %s MB", self.model_name, get_free_memory() / (1024 * 1024))
 
     def get_supported_speakers(
         self,

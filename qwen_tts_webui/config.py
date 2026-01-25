@@ -21,3 +21,23 @@ MODEL_PATH = ROOT_PATH / "models"
 
 OUTPUT_PATH = ROOT_PATH / "outputs"
 """输出文件路径"""
+
+CONFIG_PATH = ROOT_PATH / "config.json"
+"""配置文件路径"""
+
+QWEN_TTS_BASE_MODEL_LIST = [
+    "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+    "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+]
+"""Qwen TTS 声音克隆模型"""
+
+QWEN_TTS_CUSTOM_VOICE_MODEL_LIST = [
+    "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+    "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+]
+"""Qwen TTS 声音生成模型"""
+
+QWEN_TTS_VOICE_DESIGN_MODEL_LIST = [
+    "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+]
+"""Qwen TTS 声音设计模型"""

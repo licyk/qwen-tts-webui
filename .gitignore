@@ -7,4 +7,6 @@ build/
 *.egg-info/
 outputs/
 models/
+cache/
 launch.py
+config.json
