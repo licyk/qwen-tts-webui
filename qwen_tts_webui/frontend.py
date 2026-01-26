@@ -13,6 +13,7 @@ from qwen_tts_webui.config import (
     QWEN_TTS_BASE_MODEL_LIST,
     QWEN_TTS_CUSTOM_VOICE_MODEL_LIST,
     QWEN_TTS_VOICE_DESIGN_MODEL_LIST,
+    ATTN_IMPL_LIST,
 )
 from qwen_tts_webui.memory_manager import MODEL_PRECISION_LIST, get_available_devices
 from qwen_tts_webui.shared import opts, state
@@ -44,10 +45,10 @@ def create_ui() -> gr.Blocks:
                         with gr.Row():
                             gen_speaker = gr.Dropdown(label="发言人", choices=["default"], value="default", interactive=True)
                             gen_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
+                    with gr.Column():
                         with gr.Row():
                             gen_button = gr.Button("开始生成", variant="primary")
                             stop_gen_button = gr.Button("终止", variant="stop", visible=False)
-                    with gr.Column():
                         gen_output = gr.Audio(label="生成的音频", type="filepath")
 
             with gr.Tab("声音设计", id="voice_design"):
@@ -62,10 +63,10 @@ def create_ui() -> gr.Blocks:
                         design_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
                         design_instruct = gr.Textbox(label="声音特征描述", placeholder="例如：低沉的男声，带有磁性", lines=3)
                         design_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
+                    with gr.Column():
                         with gr.Row():
                             design_button = gr.Button("开始生成", variant="primary")
                             stop_design_button = gr.Button("终止", variant="stop", visible=False)
-                    with gr.Column():
                         design_output = gr.Audio(label="生成的音频", type="filepath")
 
             with gr.Tab("声音克隆", id="voice_clone"):
@@ -82,10 +83,10 @@ def create_ui() -> gr.Blocks:
                         clone_audio = gr.Audio(label="参考音频文件", type="filepath")
                         clone_ref_text = gr.Textbox(label="参考音频文本描述", placeholder="请输入参考音频对应的文本内容", lines=2)
                         clone_use_ref_text = gr.Checkbox(label="启用参考文本描述 (ICL模式)", value=True)
+                    with gr.Column():
                         with gr.Row():
                             clone_button = gr.Button("开始生成", variant="primary")
                             stop_clone_button = gr.Button("终止", variant="stop", visible=False)
-                    with gr.Column():
                         clone_output = gr.Audio(label="生成的音频", type="filepath")
 
             with gr.Tab("设置", id="settings"):
@@ -101,6 +102,11 @@ def create_ui() -> gr.Blocks:
                     label="推理精度",
                     choices=[str(p) for p in MODEL_PRECISION_LIST],
                     value=str(opts.dtype),
+                )
+                attn_implementation = gr.Dropdown(
+                    label="加速方案",
+                    choices=[str(None)] + ATTN_IMPL_LIST,
+                    value=str(opts.attn_implementation),
                 )
 
                 do_sample = gr.Checkbox(label="是否使用采样", value=opts.do_sample)
@@ -128,6 +134,7 @@ def create_ui() -> gr.Blocks:
                     api_type_val: str,
                     device_map_val: str,
                     dtype_val: str,
+                    attn_impl_val: str,
                     do_sample_val: bool,
                     top_k_val: int,
                     top_p_val: float,
@@ -143,6 +150,7 @@ def create_ui() -> gr.Blocks:
                     opts.api_type = api_type_val
                     opts.device_map = device_map_val
                     opts.dtype = dtype_val
+                    opts.attn_implementation = None if attn_impl_val == str(None) else attn_impl_val
                     opts.do_sample = do_sample_val
                     opts.top_k = top_k_val
                     opts.top_p = top_p_val
@@ -162,6 +170,7 @@ def create_ui() -> gr.Blocks:
                         api_type,
                         device_map,
                         dtype,
+                        attn_implementation,
                         do_sample,
                         top_k,
                         top_p,
@@ -184,6 +193,7 @@ def create_ui() -> gr.Blocks:
                         opts.api_type,
                         str(opts.device_map),
                         str(opts.dtype),
+                        str(opts.attn_implementation),
                         opts.do_sample,
                         opts.top_k,
                         opts.top_p,
@@ -203,6 +213,7 @@ def create_ui() -> gr.Blocks:
                         api_type,
                         device_map,
                         dtype,
+                        attn_implementation,
                         do_sample,
                         top_k,
                         top_p,
@@ -269,6 +280,7 @@ def create_ui() -> gr.Blocks:
                     api_type=opts.api_type,
                     device_map=opts.device_map,
                     dtype=getattr(torch, opts.dtype.split(".")[-1]),
+                    attn_implementation=opts.attn_implementation,
                 )
                 actual_speaker, actual_language, speaker_update, language_update = update_metadata(speaker, language)
 
@@ -303,6 +315,7 @@ def create_ui() -> gr.Blocks:
                     api_type=opts.api_type,
                     device_map=opts.device_map,
                     dtype=getattr(torch, opts.dtype.split(".")[-1]),
+                    attn_implementation=opts.attn_implementation,
                 )
                 actual_language, language_update = update_metadata_simple(language)
 
@@ -341,6 +354,7 @@ def create_ui() -> gr.Blocks:
                     api_type=opts.api_type,
                     device_map=opts.device_map,
                     dtype=getattr(torch, opts.dtype.split(".")[-1]),
+                    attn_implementation=opts.attn_implementation,
                 )
                 actual_language, language_update = update_metadata_simple(language)
 

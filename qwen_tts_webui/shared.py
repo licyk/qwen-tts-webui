@@ -31,6 +31,7 @@ options_templates: dict[str, OptionInfo] = {
     "api_type": OptionInfo("modelscope", "API 类型"),
     "device_map": OptionInfo("auto", "推理设备"),
     "dtype": OptionInfo("torch.bfloat16", "推理精度"),
+    "attn_implementation": OptionInfo(None, "加速方案"),
     "do_sample": OptionInfo(True, "是否使用采样"),
     "top_k": OptionInfo(50, "Top-k 采样参数"),
     "top_p": OptionInfo(1.0, "Top-p 采样参数"),

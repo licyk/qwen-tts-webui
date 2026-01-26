@@ -41,3 +41,6 @@ QWEN_TTS_VOICE_DESIGN_MODEL_LIST = [
     "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
 ]
 """Qwen TTS 声音设计模型"""
+
+ATTN_IMPL_LIST = ["eager", "sdpa", "flash_attention_2",]
+"""注意力加速方案"""

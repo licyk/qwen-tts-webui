@@ -2,6 +2,7 @@ import os
 from typing import (
     Literal,
     Any,
+    TypeAlias,
 )
 from pathlib import Path
 
@@ -26,6 +27,9 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
+AttnImpl: TypeAlias = Literal["eager", "sdpa", "flash_attention_2"]
+"""注意力加速方案"""
+
 
 class QwenTTSBackend:
     """Qwen TTS 推理后端"""
@@ -46,14 +50,14 @@ class QwenTTSBackend:
     ) -> None:
         """卸载模型"""
         logger.info("卸载 %s 模型", self.model_name)
-        # try:
-        #     del self.model_name
-        # except NameError:
-        #     pass
-        # try:
-        #     del self.model
-        # except NameError:
-        #     pass
+        try:
+            del self.model_name
+        except NameError:
+            pass
+        try:
+            del self.model
+        except NameError:
+            pass
         cleanup_models()
         self.model_name = None
         self.model = None
@@ -64,7 +68,7 @@ class QwenTTSBackend:
         model_name: str | None = None,
         device_map: str | None = "auto",
         dtype: torch.dtype | None = torch.bfloat16,
-        attn_implementation: str | None = None,
+        attn_implementation: AttnImpl | None = None,
         api_type: Literal["huggingface", "modelscope"] | None = "modelscope",
     ) -> None:
         """加载 Qwen TTS 模型
@@ -76,7 +80,7 @@ class QwenTTSBackend:
                 加载模型使用的设备
             dtype (torch.dtype | None):
                 加载模型使用的精度
-            attn_implementation (str | None):
+            attn_implementation (AttnImpl | None):
                 加载模型时使用的加速方案
             api_type (Literal["huggingface", "modelscope"] | None):
                 下载 Qwen TTS 模型时使用的 API 类型
