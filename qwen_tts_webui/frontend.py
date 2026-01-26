@@ -258,7 +258,10 @@ def create_ui() -> gr.Blocks:
             languages = backend.get_supported_languages() or []
 
             speaker_choices = ["default"] + speakers
-            language_choices = ["auto"] + languages
+            if "auto" in languages:
+                language_choices = languages
+            else:
+                language_choices = ["auto"] + languages
 
             actual_speaker = current_speaker
             if current_speaker == "default" and speakers:
@@ -285,7 +288,10 @@ def create_ui() -> gr.Blocks:
                 tuple[str | None, Any]: 实际语言, 语言组件更新
             """
             languages = backend.get_supported_languages() or []
-            language_choices = ["auto"] + languages
+            if "auto" in languages:
+                language_choices = languages
+            else:
+                language_choices = ["auto"] + languages
             actual_language = None if current_language == "auto" else current_language
             return actual_language, gr.update(choices=language_choices, value=current_language)
 
