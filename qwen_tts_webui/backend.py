@@ -18,7 +18,7 @@ from qwen_tts_webui.config import (
     OUTPUT_PATH,
 )
 from qwen_tts_webui.logger import get_logger
-from qwen_tts_webui.memory_manager import cleanup_models, get_free_memory, OutOfMemoryError
+from qwen_tts_webui.memory_manager import (cleanup_models, get_free_memory, OutOfMemoryError,)
 from qwen_tts_webui.hub import HubManager
 from qwen_tts_webui.utils import generate_filename
 
@@ -121,6 +121,8 @@ class QwenTTSBackend:
             )
         else:
             raise ValueError(f"未知的 API 类型: {api_type}")
+        
+        logger.info("%s 模型从 %s 下载完成", self.model_name, api_type)
 
         try:
             self.model = Qwen3TTSModel.from_pretrained(
@@ -211,23 +213,25 @@ class QwenTTSBackend:
         Raises:
             OutOfMemoryError: 推理时发生内存不足
         """
+        kwargs = {
+            "text":text,
+            "speaker":speaker,
+            "language":language,
+            "instruct":instruct,
+            "do_sample":do_sample,
+            "top_k":top_k,
+            "top_p":top_p,
+            "temperature":temperature,
+            "repetition_penalty": repetition_penalty,
+            "subtalker_dosample": subtalker_dosample,
+            "subtalker_top_k": subtalker_top_k,
+            "subtalker_top_p": subtalker_top_p,
+            "subtalker_temperature": subtalker_temperature,
+            "max_new_tokens": max_new_tokens,
+        }
+        logger.debug("调用 QwenTTSBackend.generate_custom_voice() 的参数: %s", kwargs)
         try:
-            wavs, sr = self.model.generate_custom_voice(
-                text=text,
-                speaker=speaker,
-                language=language,
-                instruct=instruct,
-                do_sample=do_sample,
-                top_k=top_k,
-                top_p=top_p,
-                temperature=temperature,
-                repetition_penalty=repetition_penalty,
-                subtalker_dosample=subtalker_dosample,
-                subtalker_top_k=subtalker_top_k,
-                subtalker_top_p=subtalker_top_p,
-                subtalker_temperature=subtalker_temperature,
-                max_new_tokens=max_new_tokens,
-            )
+            wavs, sr = self.model.generate_custom_voice(**kwargs)
         except OutOfMemoryError as e:
             logger.error("调用 Qwen TTS 模型 %s 进行音频合成时发生内存不足: %s", self.model_name, e)
             self.unload_model()
@@ -287,22 +291,24 @@ class QwenTTSBackend:
         Raises:
             OutOfMemoryError: 推理时发生内存不足
         """
+        kwargs = {
+            "text": text,
+            "instruct":instruct,
+            "language":language,
+            "do_sample":do_sample,
+            "top_k":top_k,
+            "top_p":top_p,
+            "temperature":temperature,
+            "repetition_penalty": repetition_penalty,
+            "subtalker_dosample": subtalker_dosample,
+            "subtalker_top_k": subtalker_top_k,
+            "subtalker_top_p": subtalker_top_p,
+            "subtalker_temperature": subtalker_temperature,
+            "max_new_tokens": max_new_tokens,
+        }
+        logger.debug("调用 QwenTTSBackend.generate_voice_design() 的参数: %s", kwargs)
         try:
-            wavs, sr = self.model.generate_voice_design(
-                text=text,
-                instruct=instruct,
-                language=language,
-                do_sample=do_sample,
-                top_k=top_k,
-                top_p=top_p,
-                temperature=temperature,
-                repetition_penalty=repetition_penalty,
-                subtalker_dosample=subtalker_dosample,
-                subtalker_top_k=subtalker_top_k,
-                subtalker_top_p=subtalker_top_p,
-                subtalker_temperature=subtalker_temperature,
-                max_new_tokens=max_new_tokens,
-            )
+            wavs, sr = self.model.generate_voice_design(**kwargs)
         except OutOfMemoryError as e:
             logger.error("调用 Qwen TTS 模型 %s 进行音频合成时发生内存不足: %s", self.model_name, e)
             self.unload_model()
@@ -370,27 +376,29 @@ class QwenTTSBackend:
             OutOfMemoryError: 推理时发生内存不足
             ValueError: 当 `x_vector_only_mode=False` 并且 `ref_text` 为空时
         """
+        kwargs = {
+            "text":text,
+            "language":language,
+            "ref_audio":ref_audio,
+            "ref_text":ref_text,
+            "x_vector_only_mode":x_vector_only_mode,
+            "do_sample":do_sample,
+            "top_k":top_k,
+            "top_p":top_p,
+            "temperature":temperature,
+            "repetition_penalty": repetition_penalty,
+            "subtalker_dosample": subtalker_dosample,
+            "subtalker_top_k": subtalker_top_k,
+            "subtalker_top_p": subtalker_top_p,
+            "subtalker_temperature": subtalker_temperature,
+            "max_new_tokens": max_new_tokens,
+        }
+        logger.debug("调用 QwenTTSBackend.generate_voice_clone() 的参数: %s", kwargs)
         if not x_vector_only_mode and (ref_text is None or ref_text.strip() == ""):
             raise ValueError("当 `x_vector_only_mode=False` 时, 需要提供参考音频对应的参考文本, 而当前的参考文本 `ref_text` 为空")
 
         try:
-            wavs, sr = self.model.generate_voice_clone(
-                text=text,
-                language=language,
-                ref_audio=ref_audio,
-                ref_text=ref_text,
-                x_vector_only_mode=x_vector_only_mode,
-                do_sample=do_sample,
-                top_k=top_k,
-                top_p=top_p,
-                temperature=temperature,
-                repetition_penalty=repetition_penalty,
-                subtalker_dosample=subtalker_dosample,
-                subtalker_top_k=subtalker_top_k,
-                subtalker_top_p=subtalker_top_p,
-                subtalker_temperature=subtalker_temperature,
-                max_new_tokens=max_new_tokens,
-            )
+            wavs, sr = self.model.generate_voice_clone(**kwargs)
         except OutOfMemoryError as e:
             logger.error("调用 Qwen TTS 模型 %s 进行音频合成时发生内存不足: %s", self.model_name, e)
             self.unload_model()
@@ -417,4 +425,5 @@ class QwenTTSBackend:
         save_path = OUTPUT_PATH / f"{generate_filename()}.wav"
         save_path.parent.mkdir(parents=True, exist_ok=True)
         sf.write(save_path, wav, samplerate)
+        logger.info("音频文件保存到 '%s'", save_path)
         return save_path

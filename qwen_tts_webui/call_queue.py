@@ -1,7 +1,7 @@
 """任务调用队列管理"""
 
 import functools
-from typing import Any, Callable
+from typing import (Any, Callable,)
 
 from qwen_tts_webui.fifo_lock import FIFOLock
 from qwen_tts_webui.shared import state

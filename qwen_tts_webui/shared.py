@@ -3,7 +3,7 @@
 import threading
 
 from qwen_tts_webui.config import CONFIG_PATH
-from qwen_tts_webui.options import OptionInfo, Options
+from qwen_tts_webui.options import (OptionInfo, Options,)
 
 
 class State:

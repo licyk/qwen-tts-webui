@@ -1,7 +1,9 @@
 import gc
-from enum import Enum
-import torch
 import psutil
+from enum import Enum
+
+import torch
+
 from qwen_tts_webui.logger import get_logger
 from qwen_tts_webui.config import (LOGGER_LEVEL, LOGGER_COLOR,)
 
