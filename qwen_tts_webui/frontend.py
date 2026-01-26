@@ -10,6 +10,7 @@ from qwen_tts_webui.backend import QwenTTSBackend
 from qwen_tts_webui.call_queue import wrap_gradio_call, wrap_queued_call
 from qwen_tts_webui.config import (
     CONFIG_PATH,
+    OUTPUT_PATH,
     QWEN_TTS_BASE_MODEL_LIST,
     QWEN_TTS_CUSTOM_VOICE_MODEL_LIST,
     QWEN_TTS_VOICE_DESIGN_MODEL_LIST,
@@ -88,6 +89,30 @@ def create_ui() -> gr.Blocks:
                             clone_button = gr.Button("开始生成", variant="primary")
                             stop_clone_button = gr.Button("终止", variant="stop", visible=False)
                         clone_output = gr.Audio(label="生成的音频", type="filepath")
+
+            with gr.Tab("音频浏览", id="audio_browser"):
+                with gr.Row():
+                    with gr.Column():
+                        refresh_btn = gr.Button("刷新文件列表", variant="secondary")
+                        explorer = gr.FileExplorer(
+                            root_dir=OUTPUT_PATH, 
+                            glob="**/*.wav", 
+                            file_count="single",
+                            label="选择音频文件"
+                        )
+                    with gr.Column():
+                            with gr.Row():
+                                audio_player = gr.Audio(label="播放器", type="filepath")
+
+                refresh_btn.click(  # pylint: disable=no-member
+                    fn=gr.update,
+                    outputs=explorer,
+                )
+                explorer.change(  # pylint: disable=no-member
+                    fn=lambda x: x,
+                    inputs=explorer, 
+                    outputs=audio_player,
+                )
 
             with gr.Tab("设置", id="settings"):
                 with gr.Row():
@@ -450,3 +475,4 @@ def create_ui() -> gr.Blocks:
         )
 
     return demo
+
