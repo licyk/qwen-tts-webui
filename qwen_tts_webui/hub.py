@@ -1,3 +1,5 @@
+"""HuggingFace / ModelScope 管理器"""
+
 import os
 
 from huggingface_hub import HfApi

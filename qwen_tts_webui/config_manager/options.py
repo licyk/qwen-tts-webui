@@ -1,8 +1,20 @@
 """参数存储框架"""
 
 import json
+import traceback
 import os
 from typing import Any
+
+from qwen_tts_webui.logger import get_logger
+from qwen_tts_webui.config_manager.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
+
+logger = get_logger(
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 class OptionInfo:
@@ -98,7 +110,8 @@ class Options:
                     if k in self.data_labels:
                         self.data[k] = v
         except Exception as e:
-            print(f"Error loading config: {e}")
+            traceback.print_exc()
+            logger.error("加载配置文件时发生错误: %s", e)
 
     def reset(
         self,

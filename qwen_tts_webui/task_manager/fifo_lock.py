@@ -7,12 +7,17 @@ import threading
 class FIFOLock:
     """先进先出锁，确保任务按顺序获取锁"""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+    ) -> None:
         self._lock = threading.Lock()
         self._inner_lock = threading.Lock()
         self._pending_threads = collections.deque()
 
-    def acquire(self, blocking: bool = True) -> bool:
+    def acquire(
+        self,
+        blocking: bool = True,
+    ) -> bool:
         """获取锁
 
         Args:
@@ -34,7 +39,9 @@ class FIFOLock:
         release_event.wait()
         return self._lock.acquire()
 
-    def release(self) -> None:
+    def release(
+        self,
+    ) -> None:
         """释放锁"""
         with self._inner_lock:
             if self._pending_threads:
@@ -43,8 +50,15 @@ class FIFOLock:
 
             self._lock.release()
 
-    def __enter__(self) -> bool:
+    def __enter__(
+        self,
+    ) -> bool:
         return self.acquire()
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type,
+        exc_val,
+        exc_tb,
+    ) -> None:
         self.release()

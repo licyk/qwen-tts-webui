@@ -1,6 +1,8 @@
+"""Qwen TTS WebUI"""
+
 import os
 
-from qwen_tts_webui.config import ROOT_PATH
+from qwen_tts_webui.config_manager.config import ROOT_PATH
 
 os.environ["CACHE_HOME"] = os.getenv("CACHE_HOME", (ROOT_PATH / "cache").as_posix())
 os.environ["HF_HOME"] = os.getenv("HF_HOME", (ROOT_PATH / "cache" / "huggingface").as_posix())

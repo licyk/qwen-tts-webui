@@ -1,11 +1,16 @@
+"""模型内存管理器"""
+
 import gc
-import psutil
 from enum import Enum
 
 import torch
+import psutil
 
 from qwen_tts_webui.logger import get_logger
-from qwen_tts_webui.config import (LOGGER_LEVEL, LOGGER_COLOR,)
+from qwen_tts_webui.config_manager.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
 
 logger = get_logger(
     level=LOGGER_LEVEL,
@@ -34,48 +39,64 @@ class DeviceManager:
         self._mps_available: bool = self._check_mps()
         self._cpu_state: CPUState = self._init_cpu_state()
 
-    def _check_xpu(self) -> bool:
+    def _check_xpu(
+        self,
+    ) -> bool:
         """检测 Intel XPU 是否可用"""
         try:
             import torch.xpu  # pylint: disable=redefined-outer-name
 
             return torch.xpu.is_available()
         except (ImportError, AttributeError, Exception):
+            logger.debug("Intel XPU 不可用")
             return False
 
-    def _check_npu(self) -> bool:
+    def _check_npu(
+        self,
+    ) -> bool:
         """检测华为昇腾 NPU 是否可用"""
         try:
             import torch_npu  # noqa: F401  # pylint: disable=redefined-outer-name,unused-import # type: ignore
 
             return torch.npu.is_available()
         except (ImportError, AttributeError, Exception):
+            logger.debug("华为昇腾 NPU 不可用")
             return False
 
-    def _check_mlu(self) -> bool:
+    def _check_mlu(
+        self,
+    ) -> bool:
         """检测寒武纪 MLU 是否可用"""
         try:
             import torch_mlu  # noqa: F401  # pylint: disable=redefined-outer-name,unused-import # type: ignore
 
             return torch.mlu.is_available()
         except (ImportError, AttributeError, Exception):
+            logger.debug("寒武纪 MLU 不可用")
             return False
 
-    def _check_mps(self) -> bool:
+    def _check_mps(
+        self,
+    ) -> bool:
         """检测 Apple Silicon MPS 是否可用"""
         try:
             return torch.backends.mps.is_available()
         except (AttributeError, Exception):
+            logger.debug("Apple Silicon MPS 不可用")
             return False
 
-    def _init_cpu_state(self) -> CPUState:
+    def _init_cpu_state(
+        self,
+    ) -> CPUState:
         """初始化默认设备状态"""
         if self._mps_available:
             return CPUState.MPS
         return CPUState.GPU
 
     @property
-    def cpu_state(self) -> CPUState:
+    def cpu_state(
+        self,
+    ) -> CPUState:
         """获取当前设备状态"""
         return self._cpu_state
 
@@ -87,19 +108,27 @@ class DeviceManager:
         """设置当前设备状态"""
         self._cpu_state = state
 
-    def is_intel_xpu(self) -> bool:
+    def is_intel_xpu(
+        self,
+    ) -> bool:
         """判断当前是否正在使用 Intel XPU"""
         return self._cpu_state == CPUState.GPU and self._xpu_available
 
-    def is_ascend_npu(self) -> bool:
+    def is_ascend_npu(
+        self,
+    ) -> bool:
         """判断 NPU 是否可用"""
         return self._npu_available
 
-    def is_mlu(self) -> bool:
+    def is_mlu(
+        self,
+    ) -> bool:
         """判断 MLU 是否可用"""
         return self._mlu_available
 
-    def get_torch_device(self) -> torch.device:
+    def get_torch_device(
+        self,
+    ) -> torch.device:
         """获取当前首选的 PyTorch 设备
 
         Returns:
@@ -123,7 +152,9 @@ class DeviceManager:
 
         return torch.device("cpu")
 
-    def get_available_devices(self) -> list[torch.device]:
+    def get_available_devices(
+        self,
+    ) -> list[torch.device]:
         """获取所有可用的计算设备列表
 
         Returns:
@@ -169,21 +200,27 @@ class DeviceManager:
         devices.append(torch.device("cpu"))
         return devices
 
-    def empty_cache(self) -> None:
+    def empty_cache(
+        self,
+    ) -> None:
         """清理当前设备的显存/内存缓存"""
         import torch  # pylint: disable=redefined-outer-name,import-error,unused-import,reimported  # noqa: F401  # type: ignore
+
         if self._cpu_state == CPUState.MPS:
             import torch.mps  # pylint: disable=redefined-outer-name
 
             torch.mps.empty_cache()
         elif self.is_intel_xpu():
             import torch.xpu  # pylint: disable=redefined-outer-name,import-error,unused-import  # noqa: F401  # type: ignore
+
             torch.xpu.empty_cache()
         elif self.is_ascend_npu():
             import torch_npu  # pylint: disable=redefined-outer-name,import-error,unused-import  # noqa: F401  # type: ignore
+
             torch.npu.empty_cache()
         elif self.is_mlu():
             import torch_mlu  # pylint: disable=redefined-outer-name,import-error,unused-import  # noqa: F401  # type: ignore
+
             torch.mlu.empty_cache()
         elif torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -216,24 +253,28 @@ class DeviceManager:
             try:
                 if dev.type == "xpu":
                     import torch.xpu  # pylint: disable=redefined-outer-name
+
                     stats = torch.xpu.memory_stats(dev)
                     mem_active = stats["active_bytes.all.current"]
                     mem_reserved = stats["reserved_bytes.all.current"]
                     mem_free_backend = torch.xpu.get_device_properties(dev).total_memory - mem_reserved
                 elif dev.type == "npu":
                     import torch_npu  # pylint: disable=redefined-outer-name,import-error,unused-import  # noqa: F401  # type: ignore
+
                     stats = torch.npu.memory_stats(dev)
                     mem_active = stats["active_bytes.all.current"]
                     mem_reserved = stats["reserved_bytes.all.current"]
                     mem_free_backend, _ = torch.npu.mem_get_info(dev)
                 elif dev.type == "mlu":
                     import torch_mlu  # pylint: disable=redefined-outer-name,import-error,unused-import  # noqa: F401  # type: ignore
+
                     stats = torch.mlu.memory_stats(dev)
                     mem_active = stats["active_bytes.all.current"]
                     mem_reserved = stats["reserved_bytes.all.current"]
                     mem_free_backend, _ = torch.mlu.mem_get_info(dev)
                 else:  # cuda
                     import torch  # pylint: disable=redefined-outer-name,import-error,unused-import,reimported  # noqa: F401  # type: ignore
+
                     stats = torch.cuda.memory_stats(dev)
                     mem_active = stats["active_bytes.all.current"]
                     mem_reserved = stats["reserved_bytes.all.current"]
@@ -266,6 +307,7 @@ MODEL_PRECISION_LIST = [
     torch.float8_e5m2,
 ]
 """模型精度列表"""
+
 
 def get_torch_device() -> torch.device:
     """获取当前使用的 PyTorch 设备
@@ -337,7 +379,9 @@ def cleanup_models() -> None:
     logger.info("当前可用的内存: %.2f MB", get_free_memory() / (1024 * 1024))
 
 
-def get_device_name(device: torch.device) -> str:
+def get_device_name(
+    device: torch.device,
+) -> str:
     """获取设备对应的名字
 
     Args:
@@ -351,15 +395,19 @@ def get_device_name(device: torch.device) -> str:
     try:
         if device.type == "cuda":
             import torch  # pylint: disable=redefined-outer-name,reimported
+
             return f"({torch.cuda.get_device_name(device)})"
         elif device.type == "xpu":
             import torch.xpu  # pylint: disable=redefined-outer-name
+
             return f"({torch.xpu.get_device_properties(device).name})"
         elif device.type == "npu":
             import torch_npu  # pylint: disable=redefined-outer-name,import-error,unused-import  # noqa: F401  # type: ignore
+
             return f"({torch.npu.get_device_name(device)})"
         elif device.type == "mlu":
             import torch_mlu  # pylint: disable=redefined-outer-name,import-error,unused-import  # noqa: F401  # type: ignore
+
             return f"({torch.mlu.get_device_name(device)})"
     except Exception:
         return str(device)

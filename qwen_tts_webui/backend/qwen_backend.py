@@ -1,3 +1,5 @@
+"""Qwen TTS 推理后端"""
+
 import os
 from typing import (
     Literal,
@@ -11,14 +13,17 @@ import soundfile as sf
 from modelscope import snapshot_download
 from qwen_tts import Qwen3TTSModel
 
-from qwen_tts_webui.config import (
+from qwen_tts_webui.config_manager.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
-    MODEL_PATH,
     OUTPUT_PATH,
 )
 from qwen_tts_webui.logger import get_logger
-from qwen_tts_webui.memory_manager import (cleanup_models, get_free_memory, OutOfMemoryError,)
+from qwen_tts_webui.backend.memory_manager import (
+    cleanup_models,
+    get_free_memory,
+    OutOfMemoryError,
+)
 from qwen_tts_webui.hub import HubManager
 from qwen_tts_webui.utils import generate_filename
 
@@ -106,22 +111,21 @@ class QwenTTSBackend:
             self.model_name = model_name
             logger.info("加载 Qwen TTS 模型: %s", self.model_name)
 
-        _, repo_name = self.hub.get_user_and_repo_name(model_name)
         if api_type == "huggingface":
+            logger.info("从 HuggingFace 下载 %s 中", self.model_name)
             model_path = self.hub.hf_api.snapshot_download(
                 repo_id=model_name,
                 repo_type="model",
-                local_dir=MODEL_PATH / repo_name,
             )
         elif api_type == "modelscope":
+            logger.info("从 ModelScope 下载 %s 中", self.model_name)
             model_path = snapshot_download(
                 repo_id=model_name,
                 repo_type="model",
-                local_dir=MODEL_PATH / repo_name,
             )
         else:
             raise ValueError(f"未知的 API 类型: {api_type}")
-        
+
         logger.info("%s 模型从 %s 下载完成", self.model_name, api_type)
 
         try:
@@ -214,14 +218,14 @@ class QwenTTSBackend:
             OutOfMemoryError: 推理时发生内存不足
         """
         kwargs = {
-            "text":text,
-            "speaker":speaker,
-            "language":language,
-            "instruct":instruct,
-            "do_sample":do_sample,
-            "top_k":top_k,
-            "top_p":top_p,
-            "temperature":temperature,
+            "text": text,
+            "speaker": speaker,
+            "language": language,
+            "instruct": instruct,
+            "do_sample": do_sample,
+            "top_k": top_k,
+            "top_p": top_p,
+            "temperature": temperature,
             "repetition_penalty": repetition_penalty,
             "subtalker_dosample": subtalker_dosample,
             "subtalker_top_k": subtalker_top_k,
@@ -293,12 +297,12 @@ class QwenTTSBackend:
         """
         kwargs = {
             "text": text,
-            "instruct":instruct,
-            "language":language,
-            "do_sample":do_sample,
-            "top_k":top_k,
-            "top_p":top_p,
-            "temperature":temperature,
+            "instruct": instruct,
+            "language": language,
+            "do_sample": do_sample,
+            "top_k": top_k,
+            "top_p": top_p,
+            "temperature": temperature,
             "repetition_penalty": repetition_penalty,
             "subtalker_dosample": subtalker_dosample,
             "subtalker_top_k": subtalker_top_k,
@@ -377,15 +381,15 @@ class QwenTTSBackend:
             ValueError: 当 `x_vector_only_mode=False` 并且 `ref_text` 为空时
         """
         kwargs = {
-            "text":text,
-            "language":language,
-            "ref_audio":ref_audio,
-            "ref_text":ref_text,
-            "x_vector_only_mode":x_vector_only_mode,
-            "do_sample":do_sample,
-            "top_k":top_k,
-            "top_p":top_p,
-            "temperature":temperature,
+            "text": text,
+            "language": language,
+            "ref_audio": ref_audio,
+            "ref_text": ref_text,
+            "x_vector_only_mode": x_vector_only_mode,
+            "do_sample": do_sample,
+            "top_k": top_k,
+            "top_p": top_p,
+            "temperature": temperature,
             "repetition_penalty": repetition_penalty,
             "subtalker_dosample": subtalker_dosample,
             "subtalker_top_k": subtalker_top_k,

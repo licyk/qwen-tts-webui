@@ -1,0 +1,9 @@
+torch
+torchvision
+torchaudio
+qwen-tts
+psutil
+soundfile
+modelscope
+huggingface_hub
+gradio==6.4.0

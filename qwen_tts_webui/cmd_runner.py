@@ -44,8 +44,8 @@ import shlex
 import subprocess
 from pathlib import Path
 
-from ani2xcur.logger import get_logger
-from ani2xcur.config import (
+from qwen_tts_webui.logger import get_logger
+from qwen_tts_webui.config_manager.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
 )

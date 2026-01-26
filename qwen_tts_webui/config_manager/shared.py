@@ -2,9 +2,15 @@
 
 import threading
 
-from qwen_tts_webui.config import CONFIG_PATH
-from qwen_tts_webui.options import (OptionInfo, Options,)
+from qwen_tts_webui.config_manager.config import CONFIG_PATH
+from qwen_tts_webui.config_manager.options import (OptionInfo, Options,)
+from qwen_tts_webui.logger import get_logger
+from qwen_tts_webui.config_manager.config import (LOGGER_LEVEL, LOGGER_COLOR,)
 
+logger = get_logger(
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 class State:
     """全局状态类，用于管理任务运行状态"""
@@ -16,14 +22,17 @@ class State:
 
     def interrupt(self) -> None:
         """中断当前任务"""
+        logger.debug("已中断当前任务")
         self.interrupted = True
 
     def begin(self) -> None:
         """开始新任务"""
+        logger.debug("开始新的任务")
         self.interrupted = False
 
     def end(self) -> None:
         """结束任务"""
+        logger.debug("任务运行结束")
         self.job = ""
 
 

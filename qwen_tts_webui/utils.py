@@ -1,6 +1,20 @@
+"""其他工具"""
+
 import datetime
 import string
 import random
+import socket
+
+from qwen_tts_webui.logger import get_logger
+from qwen_tts_webui.config_manager.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
+
+logger = get_logger(
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 def generate_datetime_string() -> str:
@@ -82,3 +96,23 @@ def generate_filename(
         return generate_datetime_string() + f"_{random_str}"
 
     return random_str
+
+
+def find_port(port: int) -> int:
+    """寻找未被占用的服务器端口
+
+    Args:
+        port (int):
+            要查询的端口
+
+    Returns:
+        int: 可用的端口
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1)
+        if s.connect_ex(("localhost", port)) == 0:
+            logger.debug("%s 端口已占用, 寻找新端口", port)
+            return find_port(port=port + 1)
+        else:
+            logger.debug("%s 端口可用", port)
+            return port
