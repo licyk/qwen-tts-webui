@@ -51,6 +51,7 @@ def main() -> None:
     _, local_url, share_url = demo.launch(
         server_name=args.server_name,
         server_port=find_port(args.server_port),
+        inbrowser=not args.no_inbrowser,
         share=args.share,
         prevent_thread_lock=True,
     )
