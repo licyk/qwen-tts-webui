@@ -33,6 +33,7 @@ def main() -> None:
         logger.info("启用 Debug 模式")
         set_all_loggers_level(level=logging.DEBUG)
         import qwen_tts_webui.config_manager.config
+
         qwen_tts_webui.config_manager.config.LOGGER_LEVEL = logging.DEBUG
 
     logger.info("初始化 Qwen TTS WebUI")

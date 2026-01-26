@@ -42,7 +42,7 @@ def create_ui() -> gr.Blocks:
                     with gr.Column():
                         gen_model = gr.Dropdown(label="模型选择", choices=QWEN_TTS_CUSTOM_VOICE_MODEL_LIST, value=QWEN_TTS_CUSTOM_VOICE_MODEL_LIST[0], interactive=True)
                         gen_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
-                        gen_instruct = gr.Textbox(label="声音特征描述", placeholder="例如: 温暖的女声, 语速适中", lines=3)
+                        gen_instruct = gr.Textbox(label="声音特征描述", placeholder="例如: 体现撒娇稚嫩的女声，音调偏高且起伏明显，营造出黏人、做作又刻意卖萌的听觉效果。", lines=3)
                         with gr.Row():
                             gen_speaker = gr.Dropdown(label="发言人", choices=["default"], value="default", interactive=True)
                             gen_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
@@ -51,19 +51,29 @@ def create_ui() -> gr.Blocks:
                             gen_button = gr.Button("开始生成", variant="primary")
                             stop_gen_button = gr.Button("终止", variant="stop", visible=False)
                         gen_output = gr.Audio(label="生成的音频", type="filepath")
+                        gr.Markdown("## 使用说明\n" \
+                        "1. 在`合成文本`中输入要合成的文本, `声音特征描述`描述合成出来的声音是什么特征的, 即可点击`开始生成`.\n" \
+                        "2. `发言人`和`语言`选项默认分别只有`default`和`auto`, 当点击`开始生成`并且生成结束后, 这两个选项将会刷新, 刷新后即可选择其他选项.\n" \
+                        "3. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
 
             with gr.Tab("声音设计", id="voice_design"):
                 with gr.Row():
                     with gr.Column():
                         design_model = gr.Dropdown(label="模型选择", choices=QWEN_TTS_VOICE_DESIGN_MODEL_LIST, value=QWEN_TTS_VOICE_DESIGN_MODEL_LIST[0], interactive=True)
                         design_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
-                        design_instruct = gr.Textbox(label="声音特征描述", placeholder="例如：低沉的男声, 带有磁性", lines=3)
+                        design_instruct = gr.Textbox(
+                            label="声音特征描述", placeholder="例如：体现撒娇稚嫩的女声，音调偏高且起伏明显，营造出黏人、做作又刻意卖萌的听觉效果。", lines=3
+                        )
                         design_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
                     with gr.Column():
                         with gr.Row():
                             design_button = gr.Button("开始生成", variant="primary")
                             stop_design_button = gr.Button("终止", variant="stop", visible=False)
                         design_output = gr.Audio(label="生成的音频", type="filepath")
+                        gr.Markdown("## 使用说明\n" \
+                        "1. 在`合成文本`中输入要合成的文本, `声音特征描述`描述合成出来的声音是什么特征的, 即可点击`开始生成`.\n" \
+                        "2. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n" \
+                        "3. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
 
             with gr.Tab("声音克隆", id="voice_clone"):
                 with gr.Row():
@@ -72,12 +82,17 @@ def create_ui() -> gr.Blocks:
                         clone_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
                         clone_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
                         clone_audio = gr.Audio(label="参考音频文件", type="filepath")
-                        clone_ref_text = gr.Textbox(label="参考音频文本描述", placeholder="请输入参考音频对应的文本内容", lines=2)
+                        clone_ref_text = gr.Textbox(label="参考音频文本描述", placeholder="请输入参考音频对应的文本内容 (描述参考音频文件中说话的内容, 可不填)", lines=2)
                     with gr.Column():
                         with gr.Row():
                             clone_button = gr.Button("开始生成", variant="primary")
                             stop_clone_button = gr.Button("终止", variant="stop", visible=False)
                         clone_output = gr.Audio(label="生成的音频", type="filepath")
+                        gr.Markdown("## 使用说明\n" \
+                        "1. 在`合成文本`中输入要合成的文本, 再将一段音频导入`参考音频文件`中, 即可点击`开始生成`.\n" \
+                        "2. `参考音频文本描述 `填写导入的音频中, 音频内说话的内容, 这个选项可不填.\n" \
+                        "3. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n" \
+                        "4. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
 
             with gr.Tab("音频浏览", id="audio_browser"):
                 with gr.Row():
@@ -103,7 +118,7 @@ def create_ui() -> gr.Blocks:
                     save_settings_btn = gr.Button("保存设置", variant="primary")
                     reset_settings_btn = gr.Button("重置设置", variant="secondary")
 
-                api_type = gr.Dropdown(label="API 类型", choices=["huggingface", "modelscope"], value=opts.api_type)
+                api_type = gr.Dropdown(label="下载模型的 API 类型", choices=["huggingface", "modelscope"], value=opts.api_type)
 
                 available_devices = ["auto"] + [str(d) for d in get_available_devices()]
                 device_map = gr.Dropdown(label="推理设备", choices=available_devices, value=str(opts.device_map))

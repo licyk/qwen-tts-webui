@@ -3,14 +3,21 @@
 import threading
 
 from qwen_tts_webui.config_manager.config import CONFIG_PATH
-from qwen_tts_webui.config_manager.options import (OptionInfo, Options,)
+from qwen_tts_webui.config_manager.options import (
+    OptionInfo,
+    Options,
+)
 from qwen_tts_webui.logger import get_logger
-from qwen_tts_webui.config_manager.config import (LOGGER_LEVEL, LOGGER_COLOR,)
+from qwen_tts_webui.config_manager.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
 
 logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
 
 class State:
     """全局状态类，用于管理任务运行状态"""
@@ -37,7 +44,7 @@ class State:
 
 
 options_templates: dict[str, OptionInfo] = {
-    "api_type": OptionInfo("modelscope", "API 类型"),
+    "api_type": OptionInfo("modelscope", "下载模型的 API 类型"),
     "device_map": OptionInfo("auto", "推理设备"),
     "dtype": OptionInfo("torch.bfloat16", "推理精度"),
     "attn_implementation": OptionInfo(None, "加速方案"),

@@ -8,7 +8,7 @@ description = "基于 Qwen TTS 的 WebUI"
 requires-python = ">=3.10"
 readme = { content-type = "text/markdown", file = "README.md" }
 license = "GPL-3.0"
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
 authors = [ {name = "licyk"} ]
 
 [tool.setuptools.packages.find]
@@ -17,14 +17,12 @@ include = ["qwen_tts_webui*"]
 exclude = ["tests*", "docs*", "*__pycache__*", "*.pyc", "*.pyo", "*.pyd", ".git*", "__pycache__"]
 namespaces = true
 
-#[tool.setuptools.package-data]
-#qwen_tts_webui = ["**/*"]
-
 [tool.setuptools.exclude-package-data]
 "*" = ["__pycache__", "*.pyc", "*.pyo", "*.pyd", ".git*", ".github*", "tests*", "docs*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "qwen_tts_webui.version.VERSION" }
+dependencies = { file = ["requirements.txt"] }
 
 [tool.pylint]
 disable = [
