@@ -48,12 +48,10 @@ from ani2xcur.logger import get_logger
 from ani2xcur.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
-    LOGGER_NAME,
 )
 
 
 logger = get_logger(
-    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )

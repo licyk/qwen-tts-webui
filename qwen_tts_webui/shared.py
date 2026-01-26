@@ -1,10 +1,36 @@
-"""全局共享配置"""
+"""全局状态管理"""
 
-from qwen_tts_webui.options import Options, OptionInfo
+import threading
+
 from qwen_tts_webui.config import CONFIG_PATH
+from qwen_tts_webui.options import OptionInfo, Options
+
+
+class State:
+    """全局状态类，用于管理任务运行状态"""
+
+    def __init__(self) -> None:
+        self.interrupted = False
+        self.job = ""
+        self._lock = threading.Lock()
+
+    def interrupt(self) -> None:
+        """中断当前任务"""
+        self.interrupted = True
+
+    def begin(self) -> None:
+        """开始新任务"""
+        self.interrupted = False
+
+    def end(self) -> None:
+        """结束任务"""
+        self.job = ""
+
 
 options_templates: dict[str, OptionInfo] = {
     "api_type": OptionInfo("modelscope", "API 类型"),
+    "device_map": OptionInfo("auto", "推理设备"),
+    "dtype": OptionInfo("torch.bfloat16", "推理精度"),
     "do_sample": OptionInfo(True, "是否使用采样"),
     "top_k": OptionInfo(50, "Top-k 采样参数"),
     "top_p": OptionInfo(1.0, "Top-p 采样参数"),
@@ -22,3 +48,6 @@ opts = Options(options_templates)
 """全局配置实例"""
 
 opts.load(CONFIG_PATH)
+
+state = State()
+"""全局状态实例"""

@@ -4,15 +4,18 @@ from pathlib import Path
 from typing import Any
 
 import gradio as gr
+import torch
 
 from qwen_tts_webui.backend import QwenTTSBackend
+from qwen_tts_webui.call_queue import wrap_gradio_call, wrap_queued_call
 from qwen_tts_webui.config import (
     CONFIG_PATH,
     QWEN_TTS_BASE_MODEL_LIST,
     QWEN_TTS_CUSTOM_VOICE_MODEL_LIST,
     QWEN_TTS_VOICE_DESIGN_MODEL_LIST,
 )
-from qwen_tts_webui.shared import opts
+from qwen_tts_webui.memory_manager import MODEL_PRECISION_LIST, get_available_devices
+from qwen_tts_webui.shared import opts, state
 
 backend = QwenTTSBackend()
 
@@ -41,7 +44,9 @@ def create_ui() -> gr.Blocks:
                         with gr.Row():
                             gen_speaker = gr.Dropdown(label="发言人", choices=["default"], value="default", interactive=True)
                             gen_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
-                        gen_button = gr.Button("开始生成", variant="primary")
+                        with gr.Row():
+                            gen_button = gr.Button("开始生成", variant="primary")
+                            stop_gen_button = gr.Button("终止", variant="stop", visible=False)
                     with gr.Column():
                         gen_output = gr.Audio(label="生成的音频", type="filepath")
 
@@ -57,7 +62,9 @@ def create_ui() -> gr.Blocks:
                         design_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
                         design_instruct = gr.Textbox(label="声音特征描述", placeholder="例如：低沉的男声，带有磁性", lines=3)
                         design_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
-                        design_button = gr.Button("开始生成", variant="primary")
+                        with gr.Row():
+                            design_button = gr.Button("开始生成", variant="primary")
+                            stop_design_button = gr.Button("终止", variant="stop", visible=False)
                     with gr.Column():
                         design_output = gr.Audio(label="生成的音频", type="filepath")
 
@@ -75,7 +82,9 @@ def create_ui() -> gr.Blocks:
                         clone_audio = gr.Audio(label="参考音频文件", type="filepath")
                         clone_ref_text = gr.Textbox(label="参考音频文本描述", placeholder="请输入参考音频对应的文本内容", lines=2)
                         clone_use_ref_text = gr.Checkbox(label="启用参考文本描述 (ICL模式)", value=True)
-                        clone_button = gr.Button("开始生成", variant="primary")
+                        with gr.Row():
+                            clone_button = gr.Button("开始生成", variant="primary")
+                            stop_clone_button = gr.Button("终止", variant="stop", visible=False)
                     with gr.Column():
                         clone_output = gr.Audio(label="生成的音频", type="filepath")
 
@@ -85,6 +94,15 @@ def create_ui() -> gr.Blocks:
                     reset_settings_btn = gr.Button("重置设置", variant="secondary")
 
                 api_type = gr.Dropdown(label="API 类型", choices=["huggingface", "modelscope"], value=opts.api_type)
+
+                available_devices = ["auto"] + [str(d) for d in get_available_devices()]
+                device_map = gr.Dropdown(label="推理设备", choices=available_devices, value=str(opts.device_map))
+                dtype = gr.Dropdown(
+                    label="推理精度",
+                    choices=[str(p) for p in MODEL_PRECISION_LIST],
+                    value=str(opts.dtype),
+                )
+
                 do_sample = gr.Checkbox(label="是否使用采样", value=opts.do_sample)
                 top_k = gr.Slider(label="Top-k 采样参数", minimum=1, maximum=100, step=1, value=opts.top_k)
                 top_p = gr.Slider(label="Top-p 采样参数", minimum=0.0, maximum=1.0, step=0.01, value=opts.top_p)
@@ -108,6 +126,8 @@ def create_ui() -> gr.Blocks:
 
                 def save_settings(
                     api_type_val: str,
+                    device_map_val: str,
+                    dtype_val: str,
                     do_sample_val: bool,
                     top_k_val: int,
                     top_p_val: float,
@@ -121,6 +141,8 @@ def create_ui() -> gr.Blocks:
                 ) -> None:
                     """保存设置"""
                     opts.api_type = api_type_val
+                    opts.device_map = device_map_val
+                    opts.dtype = dtype_val
                     opts.do_sample = do_sample_val
                     opts.top_k = top_k_val
                     opts.top_p = top_p_val
@@ -134,10 +156,12 @@ def create_ui() -> gr.Blocks:
                     opts.save(CONFIG_PATH)
                     gr.Info("设置已保存")
 
-                save_settings_btn.click( # pylint: disable=no-member
+                save_settings_btn.click(  # pylint: disable=no-member
                     fn=save_settings,
                     inputs=[
                         api_type,
+                        device_map,
+                        dtype,
                         do_sample,
                         top_k,
                         top_p,
@@ -158,6 +182,8 @@ def create_ui() -> gr.Blocks:
                     gr.Info("设置已重置为默认值")
                     return [
                         opts.api_type,
+                        str(opts.device_map),
+                        str(opts.dtype),
                         opts.do_sample,
                         opts.top_k,
                         opts.top_p,
@@ -170,11 +196,13 @@ def create_ui() -> gr.Blocks:
                         opts.max_new_tokens,
                     ]
 
-                reset_settings_btn.click( # pylint: disable=no-member
+                reset_settings_btn.click(  # pylint: disable=no-member
                     fn=reset_settings,
                     inputs=[],
                     outputs=[
                         api_type,
+                        device_map,
+                        dtype,
                         do_sample,
                         top_k,
                         top_p,
@@ -236,7 +264,12 @@ def create_ui() -> gr.Blocks:
         ) -> tuple[str | None, Any, Any]:
             """声音生成处理函数"""
             try:
-                backend.load_model(model_name=model_name, api_type=opts.api_type)
+                backend.load_model(
+                    model_name=model_name,
+                    api_type=opts.api_type,
+                    device_map=opts.device_map,
+                    dtype=getattr(torch, opts.dtype.split(".")[-1]),
+                )
                 actual_speaker, actual_language, speaker_update, language_update = update_metadata(speaker, language)
 
                 output_path = backend.generate_custom_voice(
@@ -255,6 +288,8 @@ def create_ui() -> gr.Blocks:
                     subtalker_temperature=opts.subtalker_temperature,
                     max_new_tokens=opts.max_new_tokens,
                 )
+                if state.interrupted:
+                    return None, speaker_update, language_update
                 return str(output_path), speaker_update, language_update
             except Exception as e:
                 gr.Warning(f"生成失败: {str(e)}")
@@ -263,7 +298,12 @@ def create_ui() -> gr.Blocks:
         def generate_design_fn(model_name: str, text: str, instruct: str, language: str) -> tuple[str | None, Any]:
             """声音设计处理函数"""
             try:
-                backend.load_model(model_name=model_name, api_type=opts.api_type)
+                backend.load_model(
+                    model_name=model_name,
+                    api_type=opts.api_type,
+                    device_map=opts.device_map,
+                    dtype=getattr(torch, opts.dtype.split(".")[-1]),
+                )
                 actual_language, language_update = update_metadata_simple(language)
 
                 output_path = backend.generate_voice_design(
@@ -281,6 +321,8 @@ def create_ui() -> gr.Blocks:
                     subtalker_temperature=opts.subtalker_temperature,
                     max_new_tokens=opts.max_new_tokens,
                 )
+                if state.interrupted:
+                    return None, language_update
                 return str(output_path), language_update
             except Exception as e:
                 gr.Warning(f"生成失败: {str(e)}")
@@ -294,7 +336,12 @@ def create_ui() -> gr.Blocks:
                 if not ref_audio:
                     gr.Warning("请先上传参考音频文件")
                     return None, gr.update()
-                backend.load_model(model_name=model_name, api_type=opts.api_type)
+                backend.load_model(
+                    model_name=model_name,
+                    api_type=opts.api_type,
+                    device_map=opts.device_map,
+                    dtype=getattr(torch, opts.dtype.split(".")[-1]),
+                )
                 actual_language, language_update = update_metadata_simple(language)
 
                 output_path = backend.generate_voice_clone(
@@ -314,27 +361,78 @@ def create_ui() -> gr.Blocks:
                     subtalker_temperature=opts.subtalker_temperature,
                     max_new_tokens=opts.max_new_tokens,
                 )
+                if state.interrupted:
+                    return None, language_update
                 return str(output_path), language_update
             except Exception as e:
                 gr.Warning(f"生成失败: {str(e)}")
                 return None, gr.update()
 
-        gen_button.click( # pylint: disable=no-member
-            fn=generate_voice_fn,
+        def interrupt_fn():
+            """中断任务"""
+            state.interrupt()
+
+        gen_event = gen_button.click(  # pylint: disable=no-member
+            fn=lambda: (gr.update(visible=False), gr.update(visible=True)),
+            outputs=[gen_button, stop_gen_button],
+            queue=False,
+        ).then(
+            fn=wrap_queued_call(wrap_gradio_call(generate_voice_fn)),
             inputs=[gen_model, gen_text, gen_instruct, gen_speaker, gen_language],
             outputs=[gen_output, gen_speaker, gen_language],
         )
+        gen_event.then(
+            fn=lambda: (gr.update(visible=True), gr.update(visible=False)),
+            outputs=[gen_button, stop_gen_button],
+            queue=False,
+        )
+        stop_gen_button.click(  # pylint: disable=no-member
+            fn=lambda: (interrupt_fn(), gr.update(visible=True), gr.update(visible=False))[1:],
+            cancels=[gen_event],
+            outputs=[gen_button, stop_gen_button],
+            queue=False,
+        )
 
-        design_button.click( # pylint: disable=no-member
-            fn=generate_design_fn,
+        design_event = design_button.click(  # pylint: disable=no-member
+            fn=lambda: (gr.update(visible=False), gr.update(visible=True)),
+            outputs=[design_button, stop_design_button],
+            queue=False,
+        ).then(
+            fn=wrap_queued_call(wrap_gradio_call(generate_design_fn)),
             inputs=[design_model, design_text, design_instruct, design_language],
             outputs=[design_output, design_language],
         )
+        design_event.then(
+            fn=lambda: (gr.update(visible=True), gr.update(visible=False)),
+            outputs=[design_button, stop_design_button],
+            queue=False,
+        )
+        stop_design_button.click(  # pylint: disable=no-member
+            fn=lambda: (interrupt_fn(), gr.update(visible=True), gr.update(visible=False))[1:],
+            cancels=[design_event],
+            outputs=[design_button, stop_design_button],
+            queue=False,
+        )
 
-        clone_button.click( # pylint: disable=no-member
-            fn=generate_clone_fn,
+        clone_event = clone_button.click(  # pylint: disable=no-member
+            fn=lambda: (gr.update(visible=False), gr.update(visible=True)),
+            outputs=[clone_button, stop_clone_button],
+            queue=False,
+        ).then(
+            fn=wrap_queued_call(wrap_gradio_call(generate_clone_fn)),
             inputs=[clone_model, clone_text, clone_language, clone_audio, clone_ref_text, clone_use_ref_text],
             outputs=[clone_output, clone_language],
+        )
+        clone_event.then(
+            fn=lambda: (gr.update(visible=True), gr.update(visible=False)),
+            outputs=[clone_button, stop_clone_button],
+            queue=False,
+        )
+        stop_clone_button.click(  # pylint: disable=no-member
+            fn=lambda: (interrupt_fn(), gr.update(visible=True), gr.update(visible=False))[1:],
+            cancels=[clone_event],
+            outputs=[clone_button, stop_clone_button],
+            queue=False,
         )
 
     return demo

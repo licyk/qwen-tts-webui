@@ -11,7 +11,6 @@ from modelscope import snapshot_download
 from qwen_tts import Qwen3TTSModel
 
 from qwen_tts_webui.config import (
-    LOGGER_NAME,
     LOGGER_LEVEL,
     LOGGER_COLOR,
     MODEL_PATH,
@@ -23,7 +22,6 @@ from qwen_tts_webui.hub import HubManager
 from qwen_tts_webui.utils import generate_filename
 
 logger = get_logger(
-    name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
@@ -38,7 +36,6 @@ class QwenTTSBackend:
         """Qwen TTS 后端初始化"""
         self.model_name = None
         self.model = None
-        self.model_path = None
         self.hub = HubManager(
             hf_token=os.getenv("HF_TOKEN"),
             ms_token=os.getenv("MODELSCOPE_API_TOKEN"),
@@ -49,15 +46,17 @@ class QwenTTSBackend:
     ) -> None:
         """卸载模型"""
         logger.info("卸载 %s 模型", self.model_name)
-        try:
-            del self.model_name
-        except NameError:
-            pass
-        try:
-            del self.model
-        except NameError:
-            pass
+        # try:
+        #     del self.model_name
+        # except NameError:
+        #     pass
+        # try:
+        #     del self.model
+        # except NameError:
+        #     pass
         cleanup_models()
+        self.model_name = None
+        self.model = None
         logger.info("卸载模型完成")
 
     def load_model(
