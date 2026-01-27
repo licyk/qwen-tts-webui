@@ -6,8 +6,13 @@
 可选择以下其中一个安装方式进行安装。
 
 
+## 使用整合包 (仅 Windows)
+前往此处查找 Qwen TTS WebUI：[AI 绘画 / 训练整合包 · licyk/sd-webui-all-in-one · Discussion #1](https://github.com/licyk/sd-webui-all-in-one/discussions/1)
+
+
 ## 使用安装器 (仅 Windows)
-_**TODO**_
+阅读此处的说明进行使用：[Qwen TTS WebUI Installer 使用文档](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/qwen_tts_webui_installer.md)
+
 
 ## 手动安装
 请确保已经在系统中安装了 [Python](https://www.python.org) 和 [Git](https://git-scm.com)。
