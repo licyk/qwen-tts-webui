@@ -1,6 +1,7 @@
 """Qwen TTS 推理后端"""
 
 import os
+import time
 from typing import (
     Literal,
     Any,
@@ -236,7 +237,9 @@ class QwenTTSBackend:
         logger.debug("调用 QwenTTSBackend.generate_custom_voice() 的参数: %s", kwargs)
         try:
             logger.info("生成音频中")
+            start_time = time.perf_counter()
             wavs, sr = self.model.generate_custom_voice(**kwargs)
+            logger.info("音频生成完成, 耗时: %.2fs", (time.perf_counter() - start_time))
         except OutOfMemoryError as e:
             logger.error("调用 Qwen TTS 模型 %s 进行音频合成时发生内存不足: %s", self.model_name, e)
             self.unload_model()
@@ -313,7 +316,10 @@ class QwenTTSBackend:
         }
         logger.debug("调用 QwenTTSBackend.generate_voice_design() 的参数: %s", kwargs)
         try:
+            logger.info("生成音频中")
+            start_time = time.perf_counter()
             wavs, sr = self.model.generate_voice_design(**kwargs)
+            logger.info("音频生成完成, 耗时: %.2fs", (time.perf_counter() - start_time))
         except OutOfMemoryError as e:
             logger.error("调用 Qwen TTS 模型 %s 进行音频合成时发生内存不足: %s", self.model_name, e)
             self.unload_model()
@@ -403,7 +409,10 @@ class QwenTTSBackend:
             raise ValueError("当 `x_vector_only_mode=False` 时, 需要提供参考音频对应的参考文本, 而当前的参考文本 `ref_text` 为空")
 
         try:
+            logger.info("生成音频中")
+            start_time = time.perf_counter()
             wavs, sr = self.model.generate_voice_clone(**kwargs)
+            logger.info("音频生成完成, 耗时: %.2fs", (time.perf_counter() - start_time))
         except OutOfMemoryError as e:
             logger.error("调用 Qwen TTS 模型 %s 进行音频合成时发生内存不足: %s", self.model_name, e)
             self.unload_model()

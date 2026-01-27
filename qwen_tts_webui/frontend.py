@@ -47,16 +47,32 @@ def create_ui() -> gr.Blocks:
                         with gr.Row():
                             gen_speaker = gr.Dropdown(label="发言人", choices=["default"], value="default", interactive=True)
                             gen_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
+                        gen_segment = gr.Checkbox(label="分段生成 (按行切分文本)", value=False)
                     with gr.Column():
                         with gr.Row():
                             gen_button = gr.Button("开始生成", variant="primary")
                             stop_gen_button = gr.Button("终止", variant="stop", visible=False)
-                        gen_output = gr.Audio(label="生成的音频", type="filepath")
-                        gr.Markdown("## 使用说明\n" \
-                        "1. 在`合成文本`中输入要合成的文本, `声音特征描述`描述合成出来的声音是什么特征的, 即可点击`开始生成`.\n" \
-                        "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n" \
-                        "3. `发言人`和`语言`选项默认分别只有`default`和`auto`, 当点击`开始生成`并且生成结束后, 这两个选项将会刷新, 刷新后即可选择其他选项.\n" \
-                        "4. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
+
+                        gen_audio_list = gr.State([])
+
+                        @gr.render(inputs=gen_audio_list)
+                        def render_gen_audios(paths: list[str]) -> None:
+                            if not paths:
+                                gr.Markdown("暂无生成的音频，请点击左侧按钮。")
+                            else:
+                                with gr.Column():
+                                    for i, path in enumerate(paths):
+                                        with gr.Group():
+                                            gr.Audio(value=path, label=f"生成的音频 #{i + 1}", show_label=True)
+
+                        gr.Markdown(
+                            "## 使用说明\n"
+                            "1. 在`合成文本`中输入要合成的文本, `声音特征描述`描述合成出来的声音是什么特征的, 即可点击`开始生成`.\n"
+                            "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n"
+                            "3. `发言人`和`语言`选项默认分别只有`default`和`auto`, 当点击`开始生成`并且生成结束后, 这两个选项将会刷新, 刷新后即可选择其他选项.\n"
+                            "4. 如果需要分段生成音频, 可启用`分段生成 (按行切分文本)`选项.\n"
+                            "5. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看."
+                        )
 
             with gr.Tab("声音设计", id="voice_design"):
                 with gr.Row():
@@ -67,16 +83,32 @@ def create_ui() -> gr.Blocks:
                             label="声音特征描述", placeholder="例如：体现撒娇稚嫩的女声，音调偏高且起伏明显，营造出黏人、做作又刻意卖萌的听觉效果。", lines=3
                         )
                         design_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
+                        design_segment = gr.Checkbox(label="分段生成 (按行切分文本)", value=False)
                     with gr.Column():
                         with gr.Row():
                             design_button = gr.Button("开始生成", variant="primary")
                             stop_design_button = gr.Button("终止", variant="stop", visible=False)
-                        design_output = gr.Audio(label="生成的音频", type="filepath")
-                        gr.Markdown("## 使用说明\n" \
-                        "1. 在`合成文本`中输入要合成的文本, `声音特征描述`描述合成出来的声音是什么特征的, 即可点击`开始生成`.\n" \
-                        "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n" \
-                        "3. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n" \
-                        "4. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
+
+                        design_audio_list = gr.State([])
+
+                        @gr.render(inputs=design_audio_list)
+                        def render_design_audios(paths: list[str]) -> None:
+                            if not paths:
+                                gr.Markdown("暂无生成的音频，请点击左侧按钮。")
+                            else:
+                                with gr.Column():
+                                    for i, path in enumerate(paths):
+                                        with gr.Group():
+                                            gr.Audio(value=path, label=f"生成的音频样本 #{i + 1}", show_label=True)
+
+                        gr.Markdown(
+                            "## 使用说明\n"
+                            "1. 在`合成文本`中输入要合成的文本, `声音特征描述`描述合成出来的声音是什么特征的, 即可点击`开始生成`.\n"
+                            "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n"
+                            "3. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n"
+                            "4. 如果需要分段生成音频, 可启用`分段生成 (按行切分文本)`选项.\n"
+                            "5. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看."
+                        )
 
             with gr.Tab("声音克隆", id="voice_clone"):
                 with gr.Row():
@@ -86,18 +118,34 @@ def create_ui() -> gr.Blocks:
                         clone_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
                         clone_audio = gr.Audio(label="参考音频文件", type="filepath")
                         clone_ref_text = gr.Textbox(label="参考音频文本描述", placeholder="请输入参考音频对应的文本内容 (描述参考音频文件中说话的内容, 可不填)", lines=2)
+                        clone_segment = gr.Checkbox(label="分段生成 (按行切分文本)", value=False)
                     with gr.Column():
                         with gr.Row():
                             clone_button = gr.Button("开始生成", variant="primary")
                             stop_clone_button = gr.Button("终止", variant="stop", visible=False)
-                        clone_output = gr.Audio(label="生成的音频", type="filepath")
-                        gr.Markdown("## 使用说明\n" \
-                        "1. 在`合成文本`中输入要合成的文本, 再将一段音频导入`参考音频文件`中, 即可点击`开始生成`.\n" \
-                        "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n" \
-                        "3. 导入`参考音频文件`的音频只需要几秒的长度即可, 当然音频长度可以更长, 可自行尝试.\n" \
-                        "4. `参考音频文本描述 `填写导入的音频中, 音频内说话的内容, 这个选项可不填.\n" \
-                        "5. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n" \
-                        "6. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
+
+                        clone_audio_list = gr.State([])
+
+                        @gr.render(inputs=clone_audio_list)
+                        def render_clone_audios(paths: list[str]) -> None:
+                            if not paths:
+                                gr.Markdown("暂无生成的音频，请点击左侧按钮。")
+                            else:
+                                with gr.Column():
+                                    for i, path in enumerate(paths):
+                                        with gr.Group():
+                                            gr.Audio(value=path, label=f"生成的音频样本 #{i + 1}", show_label=True)
+
+                        gr.Markdown(
+                            "## 使用说明\n"
+                            "1. 在`合成文本`中输入要合成的文本, 再将一段音频导入`参考音频文件`中, 即可点击`开始生成`.\n"
+                            "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n"
+                            "3. 导入`参考音频文件`的音频只需要几秒的长度即可, 当然音频长度可以更长, 可自行尝试.\n"
+                            "4. `参考音频文本描述 `填写导入的音频中, 音频内说话的内容, 这个选项可不填.\n"
+                            "5. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n"
+                            "6. 如果需要分段生成音频, 可启用`分段生成 (按行切分文本)`选项.\n"
+                            "7. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看."
+                        )
 
             with gr.Tab("音频浏览", id="audio_browser"):
                 with gr.Row():
@@ -323,7 +371,8 @@ def create_ui() -> gr.Blocks:
             instruct: str,
             speaker: str,
             language: str,
-        ) -> tuple[str | None, Any, Any]:
+            segment_gen: bool,
+        ) -> tuple[list[str] | None, Any, Any]:
             """声音生成处理函数
 
             Args:
@@ -332,10 +381,16 @@ def create_ui() -> gr.Blocks:
                 instruct (str): 声音特征描述指令
                 speaker (str): 发言人标识
                 language (str): 语言标识
+                segment_gen (bool): 分段生成, 设置为 True 时将文本按行分段并分别生成
 
             Returns:
-                (tuple[str | None, Any, Any]): 生成的音频路径, 发言人组件更新, 语言组件更新
+                (tuple[list[str] | None, Any, Any]): 生成的音频路径, 发言人组件更新, 语言组件更新
             """
+            output_paths: list[str] = []
+            if segment_gen:
+                text_list = [x.strip() for x in text.splitlines() if x.strip() != ""]
+            else:
+                text_list = [text]
             try:
                 start_time = time.perf_counter()
                 gr.Info(f"加载 {model_name} 模型中")
@@ -347,28 +402,30 @@ def create_ui() -> gr.Blocks:
                     attn_implementation=opts.attn_implementation,
                 )
                 actual_speaker, actual_language, speaker_update, language_update = update_metadata(speaker, language)
-                gr.Info("生成音频中")
-                output_path = backend.generate_custom_voice(
-                    text=text,
-                    speaker=actual_speaker,
-                    language=actual_language,
-                    instruct=instruct,
-                    do_sample=opts.do_sample,
-                    top_k=opts.top_k,
-                    top_p=opts.top_p,
-                    temperature=opts.temperature,
-                    repetition_penalty=opts.repetition_penalty,
-                    subtalker_dosample=opts.subtalker_dosample,
-                    subtalker_top_k=opts.subtalker_top_k,
-                    subtalker_top_p=opts.subtalker_top_p,
-                    subtalker_temperature=opts.subtalker_temperature,
-                    max_new_tokens=opts.max_new_tokens,
-                )
-                if state.interrupted:
-                    return None, speaker_update, language_update
+                for i, t in enumerate(text_list, start=1):
+                    gr.Info(f"生成音频中 ({i}/{len(text_list)})")
+                    output_path = backend.generate_custom_voice(
+                        text=t,
+                        speaker=actual_speaker,
+                        language=actual_language,
+                        instruct=instruct,
+                        do_sample=opts.do_sample,
+                        top_k=opts.top_k,
+                        top_p=opts.top_p,
+                        temperature=opts.temperature,
+                        repetition_penalty=opts.repetition_penalty,
+                        subtalker_dosample=opts.subtalker_dosample,
+                        subtalker_top_k=opts.subtalker_top_k,
+                        subtalker_top_p=opts.subtalker_top_p,
+                        subtalker_temperature=opts.subtalker_temperature,
+                        max_new_tokens=opts.max_new_tokens,
+                    )
+                    if state.interrupted:
+                        return None, speaker_update, language_update
+                    output_paths.append(str(output_path))
 
                 gr.Info(f"音频生成完成, 耗时: {(time.perf_counter() - start_time):.2f}s")
-                return str(output_path), speaker_update, language_update
+                return output_paths, speaker_update, language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
                 gr.Warning(f"生成音频所需的显存不足: {str(e)}")
@@ -383,7 +440,8 @@ def create_ui() -> gr.Blocks:
             text: str,
             instruct: str,
             language: str,
-        ) -> tuple[str | None, Any]:
+            segment_gen: bool,
+        ) -> tuple[list[str] | None, Any]:
             """声音设计处理函数
 
             Args:
@@ -391,10 +449,16 @@ def create_ui() -> gr.Blocks:
                 text (str): 待合成文本
                 instruct (str): 声音描述指令
                 language (str): 语言标识
+                segment_gen (bool): 分段生成, 设置为 True 时将文本按行分段并分别生成
 
             Returns:
-                (tuple[str | None, Any]): 生成的音频路径, 语言组件更新
+                (tuple[list[str] | None, Any]): 生成的音频路径, 语言组件更新
             """
+            output_paths: list[str] = []
+            if segment_gen:
+                text_list = [x.strip() for x in text.splitlines() if x.strip() != ""]
+            else:
+                text_list = [text]
             try:
                 start_time = time.perf_counter()
                 gr.Info(f"加载 {model_name} 模型中")
@@ -406,35 +470,37 @@ def create_ui() -> gr.Blocks:
                     attn_implementation=opts.attn_implementation,
                 )
                 actual_language, language_update = update_metadata_simple(language)
-                gr.Info("生成音频中")
-                output_path = backend.generate_voice_design(
-                    text=text,
-                    instruct=instruct,
-                    language=actual_language,
-                    do_sample=opts.do_sample,
-                    top_k=opts.top_k,
-                    top_p=opts.top_p,
-                    temperature=opts.temperature,
-                    repetition_penalty=opts.repetition_penalty,
-                    subtalker_dosample=opts.subtalker_dosample,
-                    subtalker_top_k=opts.subtalker_top_k,
-                    subtalker_top_p=opts.subtalker_top_p,
-                    subtalker_temperature=opts.subtalker_temperature,
-                    max_new_tokens=opts.max_new_tokens,
-                )
-                if state.interrupted:
-                    return None, language_update
+                for i, t in enumerate(text_list, start=1):
+                    gr.Info(f"生成音频中 ({i}/{len(text_list)})")
+                    output_path = backend.generate_voice_design(
+                        text=t,
+                        instruct=instruct,
+                        language=actual_language,
+                        do_sample=opts.do_sample,
+                        top_k=opts.top_k,
+                        top_p=opts.top_p,
+                        temperature=opts.temperature,
+                        repetition_penalty=opts.repetition_penalty,
+                        subtalker_dosample=opts.subtalker_dosample,
+                        subtalker_top_k=opts.subtalker_top_k,
+                        subtalker_top_p=opts.subtalker_top_p,
+                        subtalker_temperature=opts.subtalker_temperature,
+                        max_new_tokens=opts.max_new_tokens,
+                    )
+                    if state.interrupted:
+                        return None, language_update
+                    output_paths.append(str(output_path))
 
                 gr.Info(f"音频生成完成, 耗时: {(time.perf_counter() - start_time):.2f}s")
-                return str(output_path), language_update
+                return output_paths, language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
                 gr.Warning(f"生成音频所需的显存不足: {str(e)}")
-                return None, gr.update(), gr.update()
+                return None, gr.update()
             except Exception as e:  # pylint: disable=duplicate-except
                 traceback.print_exc()
                 gr.Warning(f"生成失败: {str(e)}")
-                return None, gr.update(), gr.update()
+                return None, gr.update()
 
         def generate_clone_fn(
             model_name: str,
@@ -442,7 +508,8 @@ def create_ui() -> gr.Blocks:
             language: str,
             ref_audio: str,
             ref_text: str,
-        ) -> tuple[str | None, Any]:
+            segment_gen: bool,
+        ) -> tuple[list[str] | None, Any]:
             """声音克隆处理函数
 
             Args:
@@ -451,15 +518,21 @@ def create_ui() -> gr.Blocks:
                 language (str): 语言标识
                 ref_audio (str): 参考音频路径
                 ref_text (str): 参考音频的文本描述内容
+                segment_gen (bool): 分段生成, 设置为 True 时将文本按行分段并分别生成
 
             Returns:
-                (tuple[str | None, Any]): 生成的音频路径, 语言组件更新
+                (tuple[list[str] | None, Any]): 生成的音频路径, 语言组件更新
             """
-            try:
-                if not ref_audio:
-                    gr.Warning("请先上传参考音频文件")
-                    return None, gr.update()
+            output_paths: list[str] = []
+            if segment_gen:
+                text_list = [x.strip() for x in text.splitlines() if x.strip() != ""]
+            else:
+                text_list = [text]
 
+            if not ref_audio:
+                gr.Warning("请先上传参考音频文件")
+                return None, gr.update()
+            try:
                 start_time = time.perf_counter()
                 gr.Info(f"加载 {model_name} 模型中")
                 backend.load_model(
@@ -470,37 +543,39 @@ def create_ui() -> gr.Blocks:
                     attn_implementation=opts.attn_implementation,
                 )
                 actual_language, language_update = update_metadata_simple(language)
-                gr.Info("生成音频中")
-                output_path = backend.generate_voice_clone(
-                    text=text,
-                    language=actual_language,
-                    ref_audio=Path(ref_audio),
-                    ref_text=ref_text,
-                    x_vector_only_mode=(ref_text is None or ref_text.strip() == ""),
-                    do_sample=opts.do_sample,
-                    top_k=opts.top_k,
-                    top_p=opts.top_p,
-                    temperature=opts.temperature,
-                    repetition_penalty=opts.repetition_penalty,
-                    subtalker_dosample=opts.subtalker_dosample,
-                    subtalker_top_k=opts.subtalker_top_k,
-                    subtalker_top_p=opts.subtalker_top_p,
-                    subtalker_temperature=opts.subtalker_temperature,
-                    max_new_tokens=opts.max_new_tokens,
-                )
-                if state.interrupted:
-                    return None, language_update
+                for i, t in enumerate(text_list, start=1):
+                    gr.Info(f"生成音频中 ({i}/{len(text_list)})")
+                    output_path = backend.generate_voice_clone(
+                        text=t,
+                        language=actual_language,
+                        ref_audio=Path(ref_audio),
+                        ref_text=ref_text,
+                        x_vector_only_mode=(ref_text is None or ref_text.strip() == ""),
+                        do_sample=opts.do_sample,
+                        top_k=opts.top_k,
+                        top_p=opts.top_p,
+                        temperature=opts.temperature,
+                        repetition_penalty=opts.repetition_penalty,
+                        subtalker_dosample=opts.subtalker_dosample,
+                        subtalker_top_k=opts.subtalker_top_k,
+                        subtalker_top_p=opts.subtalker_top_p,
+                        subtalker_temperature=opts.subtalker_temperature,
+                        max_new_tokens=opts.max_new_tokens,
+                    )
+                    if state.interrupted:
+                        return None, language_update
+                    output_paths.append(str(output_path))
 
                 gr.Info(f"音频生成完成, 耗时: {(time.perf_counter() - start_time):.2f}s")
-                return str(output_path), language_update
+                return output_paths, language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
                 gr.Warning(f"生成音频所需的显存不足: {str(e)}")
-                return None, gr.update(), gr.update()
+                return None, gr.update()
             except Exception as e:  # pylint: disable=duplicate-except
                 traceback.print_exc()
                 gr.Warning(f"生成失败: {str(e)}")
-                return None, gr.update(), gr.update()
+                return None, gr.update()
 
         def interrupt_fn() -> None:
             """中断任务"""
@@ -512,8 +587,8 @@ def create_ui() -> gr.Blocks:
             queue=False,
         ).then(
             fn=wrap_queued_call(wrap_gradio_call(generate_voice_fn)),
-            inputs=[gen_model, gen_text, gen_instruct, gen_speaker, gen_language],
-            outputs=[gen_output, gen_speaker, gen_language],
+            inputs=[gen_model, gen_text, gen_instruct, gen_speaker, gen_language, gen_segment],
+            outputs=[gen_audio_list, gen_speaker, gen_language],
         )
         gen_event.then(
             fn=lambda: (gr.update(visible=True), gr.update(visible=False)),
@@ -533,8 +608,8 @@ def create_ui() -> gr.Blocks:
             queue=False,
         ).then(
             fn=wrap_queued_call(wrap_gradio_call(generate_design_fn)),
-            inputs=[design_model, design_text, design_instruct, design_language],
-            outputs=[design_output, design_language],
+            inputs=[design_model, design_text, design_instruct, design_language, design_segment],
+            outputs=[design_audio_list, design_language],
         )
         design_event.then(
             fn=lambda: (gr.update(visible=True), gr.update(visible=False)),
@@ -554,8 +629,8 @@ def create_ui() -> gr.Blocks:
             queue=False,
         ).then(
             fn=wrap_queued_call(wrap_gradio_call(generate_clone_fn)),
-            inputs=[clone_model, clone_text, clone_language, clone_audio, clone_ref_text],
-            outputs=[clone_output, clone_language],
+            inputs=[clone_model, clone_text, clone_language, clone_audio, clone_ref_text, clone_segment],
+            outputs=[clone_audio_list, clone_language],
         )
         clone_event.then(
             fn=lambda: (gr.update(visible=True), gr.update(visible=False)),
