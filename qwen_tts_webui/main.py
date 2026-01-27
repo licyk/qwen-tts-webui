@@ -42,6 +42,7 @@ def main() -> None:
         install_requirement(
             reinstall_torch=args.reinstall_torch,
             use_cn_mirror=not args.disable_pypi_cn_mirror,
+            use_uv=not args.disable_uv,
         )
 
     from qwen_tts_webui.frontend import create_ui

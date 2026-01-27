@@ -67,3 +67,6 @@ PYPI_MIRROR_CERNET = "https://mirrors.cernet.edu.cn/pypi/web/simple"
 
 PYPI_MIRROR = "https://pypi.python.org/simple"
 """PyPI 镜像源"""
+
+UV_MINIMUN_VER = "0.9.9"
+"""uv 的最低版本"""

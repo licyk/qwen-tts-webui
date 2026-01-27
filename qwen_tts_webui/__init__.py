@@ -18,3 +18,5 @@ os.environ["PYTHONPYCACHEPREFIX"] = os.getenv("PYTHONPYCACHEPREFIX", (ROOT_PATH 
 os.environ["TORCHINDUCTOR_CACHE_DIR"] = os.getenv("TORCHINDUCTOR_CACHE_DIR", (ROOT_PATH / "cache" / "torchinductor").as_posix())
 os.environ["TRITON_CACHE_DIR"] = os.getenv("TRITON_CACHE_DIR", (ROOT_PATH / "cache" / "triton").as_posix())
 os.environ["UV_CACHE_DIR"] = os.getenv("UV_CACHE_DIR", (ROOT_PATH / "cache" / "uv").as_posix())
+os.environ["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
+os.environ["PIP_NO_WARN_SCRIPT_LOCATION"] = "1"

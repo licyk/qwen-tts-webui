@@ -1,6 +1,7 @@
 """Gradio 前端界面"""
 
 import traceback
+import time
 from pathlib import Path
 from typing import Any
 
@@ -42,7 +43,7 @@ def create_ui() -> gr.Blocks:
                     with gr.Column():
                         gen_model = gr.Dropdown(label="模型选择", choices=QWEN_TTS_CUSTOM_VOICE_MODEL_LIST, value=QWEN_TTS_CUSTOM_VOICE_MODEL_LIST[0], interactive=True)
                         gen_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
-                        gen_instruct = gr.Textbox(label="声音特征描述", placeholder="例如: 体现撒娇稚嫩的女声，音调偏高且起伏明显，营造出黏人、做作又刻意卖萌的听觉效果。", lines=3)
+                        gen_instruct = gr.Textbox(label="声音特征描述", placeholder="例如: 用温柔的语气说。", lines=3)
                         with gr.Row():
                             gen_speaker = gr.Dropdown(label="发言人", choices=["default"], value="default", interactive=True)
                             gen_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
@@ -53,8 +54,9 @@ def create_ui() -> gr.Blocks:
                         gen_output = gr.Audio(label="生成的音频", type="filepath")
                         gr.Markdown("## 使用说明\n" \
                         "1. 在`合成文本`中输入要合成的文本, `声音特征描述`描述合成出来的声音是什么特征的, 即可点击`开始生成`.\n" \
-                        "2. `发言人`和`语言`选项默认分别只有`default`和`auto`, 当点击`开始生成`并且生成结束后, 这两个选项将会刷新, 刷新后即可选择其他选项.\n" \
-                        "3. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
+                        "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n" \
+                        "3. `发言人`和`语言`选项默认分别只有`default`和`auto`, 当点击`开始生成`并且生成结束后, 这两个选项将会刷新, 刷新后即可选择其他选项.\n" \
+                        "4. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
 
             with gr.Tab("声音设计", id="voice_design"):
                 with gr.Row():
@@ -72,8 +74,9 @@ def create_ui() -> gr.Blocks:
                         design_output = gr.Audio(label="生成的音频", type="filepath")
                         gr.Markdown("## 使用说明\n" \
                         "1. 在`合成文本`中输入要合成的文本, `声音特征描述`描述合成出来的声音是什么特征的, 即可点击`开始生成`.\n" \
-                        "2. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n" \
-                        "3. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
+                        "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n" \
+                        "3. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n" \
+                        "4. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
 
             with gr.Tab("声音克隆", id="voice_clone"):
                 with gr.Row():
@@ -90,9 +93,11 @@ def create_ui() -> gr.Blocks:
                         clone_output = gr.Audio(label="生成的音频", type="filepath")
                         gr.Markdown("## 使用说明\n" \
                         "1. 在`合成文本`中输入要合成的文本, 再将一段音频导入`参考音频文件`中, 即可点击`开始生成`.\n" \
-                        "2. `参考音频文本描述 `填写导入的音频中, 音频内说话的内容, 这个选项可不填.\n" \
-                        "3. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n" \
-                        "4. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
+                        "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n" \
+                        "3. 导入`参考音频文件`的音频只需要几秒的长度即可, 当然音频长度可以更长, 可自行尝试.\n" \
+                        "4. `参考音频文本描述 `填写导入的音频中, 音频内说话的内容, 这个选项可不填.\n" \
+                        "5. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n" \
+                        "6. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.")
 
             with gr.Tab("音频浏览", id="audio_browser"):
                 with gr.Row():
@@ -101,7 +106,9 @@ def create_ui() -> gr.Blocks:
                         explorer = gr.FileExplorer(root_dir=OUTPUT_PATH, glob="**/*.wav", file_count="single", label="选择音频文件")
                     with gr.Column():
                         with gr.Row():
-                            audio_player = gr.Audio(label="播放器", type="filepath")
+                            with gr.Column():
+                                audio_player = gr.Audio(label="播放器", type="filepath")
+                                gr.Markdown(f"当前音频存储路径: `{OUTPUT_PATH.as_posix()}`")
 
                 refresh_btn.click(  # pylint: disable=no-member
                     fn=gr.update,
@@ -330,6 +337,8 @@ def create_ui() -> gr.Blocks:
                 (tuple[str | None, Any, Any]): 生成的音频路径, 发言人组件更新, 语言组件更新
             """
             try:
+                start_time = time.perf_counter()
+                gr.Info(f"加载 {model_name} 模型中")
                 backend.load_model(
                     model_name=model_name,
                     api_type=opts.api_type,
@@ -338,7 +347,7 @@ def create_ui() -> gr.Blocks:
                     attn_implementation=opts.attn_implementation,
                 )
                 actual_speaker, actual_language, speaker_update, language_update = update_metadata(speaker, language)
-
+                gr.Info("生成音频中")
                 output_path = backend.generate_custom_voice(
                     text=text,
                     speaker=actual_speaker,
@@ -357,6 +366,8 @@ def create_ui() -> gr.Blocks:
                 )
                 if state.interrupted:
                     return None, speaker_update, language_update
+
+                gr.Info(f"音频生成完成, 耗时: {(time.perf_counter() - start_time):.2f}s")
                 return str(output_path), speaker_update, language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
@@ -385,6 +396,8 @@ def create_ui() -> gr.Blocks:
                 (tuple[str | None, Any]): 生成的音频路径, 语言组件更新
             """
             try:
+                start_time = time.perf_counter()
+                gr.Info(f"加载 {model_name} 模型中")
                 backend.load_model(
                     model_name=model_name,
                     api_type=opts.api_type,
@@ -393,7 +406,7 @@ def create_ui() -> gr.Blocks:
                     attn_implementation=opts.attn_implementation,
                 )
                 actual_language, language_update = update_metadata_simple(language)
-
+                gr.Info("生成音频中")
                 output_path = backend.generate_voice_design(
                     text=text,
                     instruct=instruct,
@@ -411,6 +424,8 @@ def create_ui() -> gr.Blocks:
                 )
                 if state.interrupted:
                     return None, language_update
+
+                gr.Info(f"音频生成完成, 耗时: {(time.perf_counter() - start_time):.2f}s")
                 return str(output_path), language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
@@ -445,6 +460,8 @@ def create_ui() -> gr.Blocks:
                     gr.Warning("请先上传参考音频文件")
                     return None, gr.update()
 
+                start_time = time.perf_counter()
+                gr.Info(f"加载 {model_name} 模型中")
                 backend.load_model(
                     model_name=model_name,
                     api_type=opts.api_type,
@@ -453,7 +470,7 @@ def create_ui() -> gr.Blocks:
                     attn_implementation=opts.attn_implementation,
                 )
                 actual_language, language_update = update_metadata_simple(language)
-
+                gr.Info("生成音频中")
                 output_path = backend.generate_voice_clone(
                     text=text,
                     language=actual_language,
@@ -473,6 +490,8 @@ def create_ui() -> gr.Blocks:
                 )
                 if state.interrupted:
                     return None, language_update
+
+                gr.Info(f"音频生成完成, 耗时: {(time.perf_counter() - start_time):.2f}s")
                 return str(output_path), language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()

@@ -235,6 +235,7 @@ class QwenTTSBackend:
         }
         logger.debug("调用 QwenTTSBackend.generate_custom_voice() 的参数: %s", kwargs)
         try:
+            logger.info("生成音频中")
             wavs, sr = self.model.generate_custom_voice(**kwargs)
         except OutOfMemoryError as e:
             logger.error("调用 Qwen TTS 模型 %s 进行音频合成时发生内存不足: %s", self.model_name, e)
