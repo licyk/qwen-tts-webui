@@ -7,7 +7,7 @@
 
 
 ## 使用安装器 (仅 Windows)
-
+_**TODO**_
 
 ## 手动安装
 请确保已经在系统中安装了 [Python](https://www.python.org) 和 [Git](https://git-scm.com)。
@@ -37,8 +37,8 @@ cmd /k start.bat # 或者直接双击 start.bat
 # 使用
 进入 Qwen TTS WebUI 后可直接根据界面提示进行使用，进行声音生成时将自动下载对应的模型。
 
-- **可使用的模型**：
 
+## 可使用的模型
 |模型|下载地址|
 |---|---|
 |Qwen/Qwen3-TTS-12Hz-1.7B-Base|[HuggingFace](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base) / [ModelScope](https://modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base)|
@@ -46,6 +46,31 @@ cmd /k start.bat # 或者直接双击 start.bat
 |Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice|[HuggingFace](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice) / [ModelScope](https://modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice)|
 |Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice|[HuggingFace](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice) / [ModelScope](https://modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice)|
 |Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign|[HuggingFace](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign) / [ModelScope](https://modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign)|
+
+
+## 启动参数
+```
+usage: launch.py [-h] [--debug] [--reinstall-torch] [--disable-pypi-cn-mirror] [--disable-uv] [--skip-check]
+                 [--no-inbrowser] [--server-name SERVER_NAME] [--server-port SERVER_PORT] [--share] [--version]
+
+Qwen TTS WebUI 命令行参数
+
+options:
+  -h, --help            show this help message and exit
+  --debug               启用 Debug 模式
+  --reinstall-torch     重装环境中的 PyTorch
+  --disable-pypi-cn-mirror
+                        禁用 PyPI 国内镜像
+  --disable-uv          禁用 uv 包管理器, 使用 Pip 进行依赖安装
+  --skip-check          跳过运行环境的依赖检测
+  --no-inbrowser        禁止自动打开浏览器访问 Qwen TTS WebUI
+  --server-name SERVER_NAME
+                        Qwen TTS 启动服务器名 (默认为 127.0.0.1)
+  --server-port SERVER_PORT
+                        Qwen TTS 启动端口 (默认为 7860)
+  --share               启用 Gradio 共享
+  --version             显示版本信息
+```
 
 
 # 使用的项目
