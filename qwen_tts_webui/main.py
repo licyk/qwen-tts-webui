@@ -7,6 +7,7 @@ import sys
 from qwen_tts_webui.config_manager.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
+    OUTPUT_PATH,
 )
 from qwen_tts_webui.logger import (
     get_logger,
@@ -55,6 +56,7 @@ def main() -> None:
         inbrowser=not args.no_inbrowser,
         share=args.share,
         prevent_thread_lock=True,
+        allowed_paths=[OUTPUT_PATH.as_posix()],
     )
     logger.info("Qwen TTS WebUI 已启动, 界面访问地址: %s", local_url)
     if share_url:
