@@ -52,7 +52,6 @@ PYTORCH_PACKAGES = [
     "torch==2.10.0+cu128",
     "torchvision==0.25.0+cu128",
     "torchaudio==2.10.0+cu128",
-    "xformers==0.0.34",
 ]
 """安装所需的 PyTorch 包名列表"""
 

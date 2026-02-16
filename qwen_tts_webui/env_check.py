@@ -184,7 +184,7 @@ def install_requirement(
         custom_env["PIP_INDEX_URL"] = os.getenv("PIP_INDEX_URL", mirror)
         custom_env["UV_DEFAULT_INDEX"] = os.getenv("UV_DEFAULT_INDEX", mirror)
 
-    pytorch_list = ["torch", "torchvision", "torchaudio", "xformers"]
+    pytorch_list = ["torch", "torchvision", "torchaudio"]
     need_install_pytorch = False
     custom_env = os.environ.copy()
     logger.info("检查 Qwen TTS WebUI 依赖完整性中")
