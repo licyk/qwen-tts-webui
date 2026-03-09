@@ -49,16 +49,16 @@ ATTN_IMPL_LIST = [
 """注意力加速方案"""
 
 PYTORCH_PACKAGES = [
-    "torch==2.10.0+cu128",
-    "torchvision==0.25.0+cu128",
-    "torchaudio==2.10.0+cu128",
+    "torch==2.10.0+cu130",
+    "torchvision==0.25.0+cu130",
+    "torchaudio==2.10.0+cu130",
 ]
 """安装所需的 PyTorch 包名列表"""
 
-PYTORCH_MIRROR_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu128"
+PYTORCH_MIRROR_NJU = "https://mirror.nju.edu.cn/pytorch/whl/cu130"
 """PyTorch 镜像源 (国内源)"""
 
-PYTORCH_MIRROR = "https://download.pytorch.org/whl/cu128"
+PYTORCH_MIRROR = "https://download.pytorch.org/whl/cu130"
 """PyTorch 镜像源"""
 
 PYPI_MIRROR_CERNET = "https://mirrors.cernet.edu.cn/pypi/web/simple"
