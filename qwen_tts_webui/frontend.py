@@ -26,7 +26,11 @@ from qwen_tts_webui.backend.memory_manager import (
     get_available_devices,
     OutOfMemoryError,
 )
-from qwen_tts_webui.config_manager.shared import opts, state
+from qwen_tts_webui.config_manager.shared import (
+    opts,
+    state,
+)
+from qwen_tts_webui.version import VERSION
 
 backend = QwenTTSBackend()
 
@@ -37,8 +41,8 @@ def create_ui() -> gr.Blocks:
     Returns:
         gr.Blocks: Gradio 界面实例
     """
-    with gr.Blocks(title="Qwen TTS WebUI") as demo:
-        gr.Markdown("# Qwen TTS WebUI")
+    with gr.Blocks(title=f"Qwen TTS WebUI v{VERSION}") as demo:
+        gr.Markdown(f"# Qwen TTS WebUI v{VERSION}")
 
         with gr.Tabs():
             with gr.Tab("声音生成", id="voice_generation"):
@@ -202,19 +206,19 @@ def create_ui() -> gr.Blocks:
                     label="声音生成额外模型",
                     placeholder="每行一个模型名称或路径\n例如:\nQwen/Qwen-TTS-Custom\n/path/to/local/model",
                     lines=4,
-                    value="\n".join(opts.extra_custom_voice_models)
+                    value="\n".join(opts.extra_custom_voice_models),
                 )
                 extra_voice_design_models = gr.Textbox(
                     label="声音设计额外模型",
                     placeholder="每行一个模型名称或路径\n例如:\nQwen/Qwen-TTS-Design\n/path/to/local/model",
                     lines=4,
-                    value="\n".join(opts.extra_voice_design_models)
+                    value="\n".join(opts.extra_voice_design_models),
                 )
                 extra_voice_clone_models = gr.Textbox(
                     label="声音克隆额外模型",
                     placeholder="每行一个模型名称或路径\n例如:\nQwen/Qwen-TTS-Clone\n/path/to/local/model",
                     lines=4,
-                    value="\n".join(opts.extra_voice_clone_models)
+                    value="\n".join(opts.extra_voice_clone_models),
                 )
 
                 gr.Markdown("### 采样参数")

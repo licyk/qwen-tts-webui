@@ -7,7 +7,12 @@
 
 
 ## 使用整合包 (仅 Windows)
-前往此处查找 Qwen TTS WebUI：[AI 绘画 / 训练整合包 · licyk/sd-webui-all-in-one · Discussion #1](https://github.com/licyk/sd-webui-all-in-one/discussions/1)
+前往此处查找 Qwen TTS WebUI：[AI 绘画 / 训练 / 语音生成整合包 · licyk/sd-webui-all-in-one · Discussion #1](https://github.com/licyk/sd-webui-all-in-one/discussions/1)
+
+>[!IMPORTANT]  
+>在`AI 绘画 / 训练 / 语音生成整合包`下载页面中包含大量不同类型的整合包，请注意找到 Qwen TTS WebUI 的页面说明再点击下载！
+>
+>如果找不到下载页面说明，请按下`Ctrl + F`打开浏览器的搜索功能，输入`Qwen TTS WebUI`进行当前网页搜索。
 
 
 ## 使用安装器 (Windows / Linux / MacOS)
