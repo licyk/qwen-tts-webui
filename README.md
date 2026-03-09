@@ -47,6 +47,8 @@ cmd /k start.bat # 或者直接双击 start.bat
 # 使用
 进入 Qwen TTS WebUI 后可直接根据界面提示进行使用，进行声音生成时将自动下载对应的模型。
 
+其他说明请参看：[使用离线模式运行与加载本地路径的模型 · licyk/qwen-tts-webui · Discussion #1](https://github.com/licyk/qwen-tts-webui/discussions/1)
+
 
 ## 可使用的模型
 |模型|下载地址|
