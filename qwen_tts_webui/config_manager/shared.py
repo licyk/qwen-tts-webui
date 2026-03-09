@@ -58,6 +58,9 @@ options_templates: dict[str, OptionInfo] = {
     "subtalker_top_p": OptionInfo(1.0, "子说话者 Top-p 采样"),
     "subtalker_temperature": OptionInfo(0.9, "子说话者采样温度"),
     "max_new_tokens": OptionInfo(2048, "最大生成 Token 数"),
+    "extra_custom_voice_models": OptionInfo([], "声音生成额外模型列表"),
+    "extra_voice_design_models": OptionInfo([], "声音设计额外模型列表"),
+    "extra_voice_clone_models": OptionInfo([], "声音克隆额外模型列表"),
 }
 """配置项模板"""
 

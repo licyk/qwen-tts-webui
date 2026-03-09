@@ -75,27 +75,31 @@ class QwenTTSBackend:
         device_map: str | None = "auto",
         dtype: torch.dtype | None = torch.bfloat16,
         attn_implementation: AttnImpl | None = None,
-        api_type: Literal["huggingface", "modelscope"] | None = "modelscope",
+        api_type: Literal["huggingface", "modelscope", "local"] | None = "modelscope",
     ) -> None:
         """加载 Qwen TTS 模型
 
         Args:
             model_name (str | None):
-                加载的 Qwen TTS 模型名称
+                加载的 Qwen TTS 模型名称或本地路径
             device_map (str | None):
                 加载模型使用的设备
             dtype (torch.dtype | None):
                 加载模型使用的精度
             attn_implementation (AttnImpl | None):
                 加载模型时使用的加速方案
-            api_type (Literal["huggingface", "modelscope"] | None):
-                下载 Qwen TTS 模型时使用的 API 类型
+            api_type (Literal["huggingface", "modelscope", "local"] | None):
+                下载 Qwen TTS 模型时使用的 API 类型, 设置为 "local" 时直接从本地路径加载
 
         Raises:
             ValueError:
                 当未设置任何模型名称时或者使用错误的 API 类型下载模型时
             OutOfMemoryError:
                 内存不足以加载模型时
+            RuntimeError:
+                加载模型发生未知错误时
+            FileNotFoundError:
+                模型路径不存在时
         """
         if self.model is not None and self.model_name == model_name:
             logger.info("Qwen TTS 模型 %s 已加载", self.model_name)
@@ -112,22 +116,53 @@ class QwenTTSBackend:
             self.model_name = model_name
             logger.info("加载 Qwen TTS 模型: %s", self.model_name)
 
-        if api_type == "huggingface":
-            logger.info("从 HuggingFace 下载 %s 中", self.model_name)
-            model_path = self.hub.hf_api.snapshot_download(
-                repo_id=model_name,
-                repo_type="model",
-            )
+        # 检查是否为本地路径
+        if api_type == "local":
+            if Path(model_name).exists():
+                logger.info("从本地路径加载模型: %s", model_name)
+                model_path = model_name
+            else:
+                raise FileNotFoundError(f"模型路径 '{model_name}' 不存在\n提示: 如果使用的不是本地路径的模型, 请将 API 类型切换到 modelscope 或者是 huggingface")
+        elif api_type == "huggingface":
+            logger.info("加载 %s 模型", self.model_name)
+            try:
+                # 优先使用本地缓存
+                model_path = self.hub.hf_api.snapshot_download(
+                    repo_id=model_name,
+                    repo_type="model",
+                    local_files_only=True,
+                )
+                logger.info("从本地缓存加载 %s", self.model_name)
+            except Exception:
+                # 本地不存在则从网络下载
+                logger.info("本地未找到模型, 从 HuggingFace 下载 %s 中", self.model_name)
+                model_path = self.hub.hf_api.snapshot_download(
+                    repo_id=model_name,
+                    repo_type="model",
+                    local_files_only=False,
+                )
+                logger.info("%s 模型从 HuggingFace 下载完成", self.model_name)
         elif api_type == "modelscope":
-            logger.info("从 ModelScope 下载 %s 中", self.model_name)
-            model_path = snapshot_download(
-                repo_id=model_name,
-                repo_type="model",
-            )
+            logger.info("加载 %s 模型", self.model_name)
+            try:
+                # 优先使用本地缓存
+                model_path = snapshot_download(
+                    repo_id=model_name,
+                    repo_type="model",
+                    local_files_only=True,
+                )
+                logger.info("从本地缓存加载 %s", self.model_name)
+            except Exception:
+                # 本地不存在则从网络下载
+                logger.info("本地未找到模型, 从 ModelScope 下载 %s 中", self.model_name)
+                model_path = snapshot_download(
+                    repo_id=model_name,
+                    repo_type="model",
+                    local_files_only=False,
+                )
+                logger.info("%s 模型从 ModelScope 下载完成", self.model_name)
         else:
             raise ValueError(f"未知的 API 类型: {api_type}")
-
-        logger.info("%s 模型从 %s 下载完成", self.model_name, api_type)
 
         try:
             self.model = Qwen3TTSModel.from_pretrained(
@@ -140,6 +175,13 @@ class QwenTTSBackend:
             logger.error("加载 Qwen TTS 模型 %s 时发生内存不足: %s", self.model_name, e)
             self.unload_model()
             raise e
+        except Exception as e:  # pylint: disable=duplicate-except
+            logger.error("加载 Qwen TTS 模型 %s 时发生未知错误: %s", self.model_name, e)
+            try:
+                self.unload_model()
+            except Exception:
+                logger.warning("卸载模型发生错误: %s", e)
+            raise RuntimeError(f"加载 Qwen TTS 模型 {self.model_name} 时发生未知错误: {e}") from e
 
         logger.info("%s 模型加载完成, 当前剩余的显存: %.2f MB", self.model_name, get_free_memory() / (1024 * 1024))
 

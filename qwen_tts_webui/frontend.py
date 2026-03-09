@@ -9,7 +9,10 @@ import gradio as gr
 import torch
 
 from qwen_tts_webui.backend.qwen_backend import QwenTTSBackend
-from qwen_tts_webui.task_manager.call_queue import wrap_gradio_call, wrap_queued_call
+from qwen_tts_webui.task_manager.call_queue import (
+    wrap_gradio_call,
+    wrap_queued_call,
+)
 from qwen_tts_webui.config_manager.config import (
     CONFIG_PATH,
     OUTPUT_PATH,
@@ -41,7 +44,8 @@ def create_ui() -> gr.Blocks:
             with gr.Tab("声音生成", id="voice_generation"):
                 with gr.Row():
                     with gr.Column():
-                        gen_model = gr.Dropdown(label="模型选择", choices=QWEN_TTS_CUSTOM_VOICE_MODEL_LIST, value=QWEN_TTS_CUSTOM_VOICE_MODEL_LIST[0], interactive=True)
+                        gen_model_choices = QWEN_TTS_CUSTOM_VOICE_MODEL_LIST + opts.extra_custom_voice_models
+                        gen_model = gr.Dropdown(label="模型选择", choices=gen_model_choices, value=gen_model_choices[0], interactive=True)
                         gen_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
                         gen_instruct = gr.Textbox(label="声音特征描述", placeholder="例如: 用温柔的语气说。", lines=3)
                         with gr.Row():
@@ -71,13 +75,15 @@ def create_ui() -> gr.Blocks:
                             "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n"
                             "3. `发言人`和`语言`选项默认分别只有`default`和`auto`, 当点击`开始生成`并且生成结束后, 这两个选项将会刷新, 刷新后即可选择其他选项.\n"
                             "4. 如果需要分段生成音频, 可启用`分段生成 (按行切分文本)`选项.\n"
-                            "5. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看."
+                            "5. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.\n"
+                            "6. **使用本地模型**: 如需使用本地路径的模型, 请先在`设置`页面的`额外模型列表`中添加本地模型路径, 并将`下载模型的 API 类型`设置为 `local`, 保存设置后即可在模型选择中使用本地模型."
                         )
 
             with gr.Tab("声音设计", id="voice_design"):
                 with gr.Row():
                     with gr.Column():
-                        design_model = gr.Dropdown(label="模型选择", choices=QWEN_TTS_VOICE_DESIGN_MODEL_LIST, value=QWEN_TTS_VOICE_DESIGN_MODEL_LIST[0], interactive=True)
+                        design_model_choices = QWEN_TTS_VOICE_DESIGN_MODEL_LIST + opts.extra_voice_design_models
+                        design_model = gr.Dropdown(label="模型选择", choices=design_model_choices, value=design_model_choices[0], interactive=True)
                         design_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
                         design_instruct = gr.Textbox(
                             label="声音特征描述", placeholder="例如：体现撒娇稚嫩的女声，音调偏高且起伏明显，营造出黏人、做作又刻意卖萌的听觉效果。", lines=3
@@ -107,13 +113,15 @@ def create_ui() -> gr.Blocks:
                             "2. 初次生成需要下载模型, 请耐心等待模型下载完成, 可在控制台中查看模型的下载进度.\n"
                             "3. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n"
                             "4. 如果需要分段生成音频, 可启用`分段生成 (按行切分文本)`选项.\n"
-                            "5. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看."
+                            "5. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.\n"
+                            "6. **使用本地模型**: 如需使用本地路径的模型, 请先在`设置`页面的`额外模型列表`中添加本地模型路径, 并将`下载模型的 API 类型`设置为 `local`, 保存设置后即可在模型选择中使用本地模型."
                         )
 
             with gr.Tab("声音克隆", id="voice_clone"):
                 with gr.Row():
                     with gr.Column():
-                        clone_model = gr.Dropdown(label="模型选择", choices=QWEN_TTS_BASE_MODEL_LIST, value=QWEN_TTS_BASE_MODEL_LIST[0], interactive=True)
+                        clone_model_choices = QWEN_TTS_BASE_MODEL_LIST + opts.extra_voice_clone_models
+                        clone_model = gr.Dropdown(label="模型选择", choices=clone_model_choices, value=clone_model_choices[0], interactive=True)
                         clone_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
                         clone_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
                         clone_audio = gr.Audio(label="参考音频文件", type="filepath")
@@ -144,7 +152,8 @@ def create_ui() -> gr.Blocks:
                             "4. `参考音频文本描述 `填写导入的音频中, 音频内说话的内容, 这个选项可不填.\n"
                             "5. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n"
                             "6. 如果需要分段生成音频, 可启用`分段生成 (按行切分文本)`选项.\n"
-                            "7. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看."
+                            "7. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.\n"
+                            "8. **使用本地模型**: 如需使用本地路径的模型, 请先在`设置`页面的`额外模型列表`中添加本地模型路径, 并将`下载模型的 API 类型`设置为 `local`, 保存设置后即可在模型选择中使用本地模型."
                         )
 
             with gr.Tab("音频浏览", id="audio_browser"):
@@ -173,13 +182,42 @@ def create_ui() -> gr.Blocks:
                     save_settings_btn = gr.Button("保存设置", variant="primary")
                     reset_settings_btn = gr.Button("重置设置", variant="secondary")
 
-                api_type = gr.Dropdown(label="下载模型的 API 类型", choices=["huggingface", "modelscope"], value=opts.api_type)
+                gr.Markdown("### 模型加载设置")
+                api_type = gr.Dropdown(label="下载模型的 API 类型", choices=["huggingface", "modelscope", "local"], value=opts.api_type)
+                gr.Markdown(
+                    "**提示**: 当使用本地路径的模型时,需要将 API 类型设置为 `local`。\n"
+                    "- `huggingface`: 从 HuggingFace 下载模型 (优先使用本地缓存)\n"
+                    "- `modelscope`: 从 ModelScope 下载模型 (优先使用本地缓存)\n"
+                    "- `local`: 直接从本地路径加载模型,不进行任何网络请求"
+                )
 
                 available_devices = ["auto"] + [str(d) for d in get_available_devices()]
                 device_map = gr.Dropdown(label="推理设备", choices=available_devices, value=str(opts.device_map))
                 dtype = gr.Dropdown(label="推理精度", choices=[str(p) for p in MODEL_PRECISION_LIST], value=str(opts.dtype))
                 attn_implementation = gr.Dropdown(label="加速方案", choices=[str(None)] + ATTN_IMPL_LIST, value=str(opts.attn_implementation))
 
+                gr.Markdown("### 额外模型列表")
+                gr.Markdown("在下方输入框中每行输入一个模型名称或路径,这些模型将会添加到对应功能的模型选择列表中")
+                extra_custom_voice_models = gr.Textbox(
+                    label="声音生成额外模型",
+                    placeholder="每行一个模型名称或路径\n例如:\nQwen/Qwen-TTS-Custom\n/path/to/local/model",
+                    lines=4,
+                    value="\n".join(opts.extra_custom_voice_models)
+                )
+                extra_voice_design_models = gr.Textbox(
+                    label="声音设计额外模型",
+                    placeholder="每行一个模型名称或路径\n例如:\nQwen/Qwen-TTS-Design\n/path/to/local/model",
+                    lines=4,
+                    value="\n".join(opts.extra_voice_design_models)
+                )
+                extra_voice_clone_models = gr.Textbox(
+                    label="声音克隆额外模型",
+                    placeholder="每行一个模型名称或路径\n例如:\nQwen/Qwen-TTS-Clone\n/path/to/local/model",
+                    lines=4,
+                    value="\n".join(opts.extra_voice_clone_models)
+                )
+
+                gr.Markdown("### 采样参数")
                 do_sample = gr.Checkbox(label="是否使用采样", value=opts.do_sample)
                 top_k = gr.Slider(label="Top-k 采样参数", minimum=1, maximum=100, step=1, value=opts.top_k)
                 top_p = gr.Slider(label="Top-p 采样参数", minimum=0.0, maximum=1.0, step=0.01, value=opts.top_p)
@@ -196,6 +234,9 @@ def create_ui() -> gr.Blocks:
                     device_map_val: str,
                     dtype_val: str,
                     attn_impl_val: str,
+                    extra_custom_voice_models_val: str,
+                    extra_voice_design_models_val: str,
+                    extra_voice_clone_models_val: str,
                     do_sample_val: bool,
                     top_k_val: int,
                     top_p_val: float,
@@ -206,7 +247,7 @@ def create_ui() -> gr.Blocks:
                     subtalker_top_p_val: float,
                     subtalker_temperature_val: float,
                     max_new_tokens_val: int,
-                ) -> None:
+                ) -> tuple[Any, Any, Any]:
                     """保存设置
 
                     Args:
@@ -214,6 +255,9 @@ def create_ui() -> gr.Blocks:
                         device_map_val (str): 推理设备
                         dtype_val (str): 推理精度
                         attn_impl_val (str): 加速方案
+                        extra_custom_voice_models_val (str): 声音生成额外模型列表
+                        extra_voice_design_models_val (str): 声音设计额外模型列表
+                        extra_voice_clone_models_val (str): 声音克隆额外模型列表
                         do_sample_val (bool): 是否使用采样
                         top_k_val (int): Top-k 采样参数
                         top_p_val (float): Top-p 采样参数
@@ -224,11 +268,18 @@ def create_ui() -> gr.Blocks:
                         subtalker_top_p_val (float): 子说话者 Top-p 采样
                         subtalker_temperature_val (float): 子说话者采样温度
                         max_new_tokens_val (int): 最大生成 Token 数
+
+                    Returns:
+                        tuple[Any, Any, Any]: 更新后的三个模型选择下拉框
                     """
                     opts.api_type = api_type_val
                     opts.device_map = device_map_val
                     opts.dtype = dtype_val
                     opts.attn_implementation = None if attn_impl_val == str(None) else attn_impl_val
+                    # 处理额外模型列表: 按行分割并过滤空行
+                    opts.extra_custom_voice_models = [x.strip() for x in extra_custom_voice_models_val.splitlines() if x.strip()]
+                    opts.extra_voice_design_models = [x.strip() for x in extra_voice_design_models_val.splitlines() if x.strip()]
+                    opts.extra_voice_clone_models = [x.strip() for x in extra_voice_clone_models_val.splitlines() if x.strip()]
                     opts.do_sample = do_sample_val
                     opts.top_k = top_k_val
                     opts.top_p = top_p_val
@@ -241,6 +292,15 @@ def create_ui() -> gr.Blocks:
                     opts.max_new_tokens = max_new_tokens_val
                     opts.save(CONFIG_PATH)
                     gr.Info("设置已保存")
+                    # 更新模型选择下拉框
+                    gen_choices = QWEN_TTS_CUSTOM_VOICE_MODEL_LIST + opts.extra_custom_voice_models
+                    design_choices = QWEN_TTS_VOICE_DESIGN_MODEL_LIST + opts.extra_voice_design_models
+                    clone_choices = QWEN_TTS_BASE_MODEL_LIST + opts.extra_voice_clone_models
+                    return (
+                        gr.update(choices=gen_choices),
+                        gr.update(choices=design_choices),
+                        gr.update(choices=clone_choices),
+                    )
 
                 save_settings_btn.click(  # pylint: disable=no-member
                     fn=save_settings,
@@ -249,6 +309,9 @@ def create_ui() -> gr.Blocks:
                         device_map,
                         dtype,
                         attn_implementation,
+                        extra_custom_voice_models,
+                        extra_voice_design_models,
+                        extra_voice_clone_models,
                         do_sample,
                         top_k,
                         top_p,
@@ -260,6 +323,7 @@ def create_ui() -> gr.Blocks:
                         subtalker_temperature,
                         max_new_tokens,
                     ],
+                    outputs=[gen_model, design_model, clone_model],
                 )
 
                 def reset_settings() -> list[Any]:
@@ -271,11 +335,18 @@ def create_ui() -> gr.Blocks:
                     opts.reset()
                     opts.save(CONFIG_PATH)
                     gr.Info("设置已重置为默认值")
+                    # 更新模型选择下拉框
+                    gen_choices = QWEN_TTS_CUSTOM_VOICE_MODEL_LIST + opts.extra_custom_voice_models
+                    design_choices = QWEN_TTS_VOICE_DESIGN_MODEL_LIST + opts.extra_voice_design_models
+                    clone_choices = QWEN_TTS_BASE_MODEL_LIST + opts.extra_voice_clone_models
                     return [
                         opts.api_type,
                         str(opts.device_map),
                         str(opts.dtype),
                         str(opts.attn_implementation),
+                        "\n".join(opts.extra_custom_voice_models),
+                        "\n".join(opts.extra_voice_design_models),
+                        "\n".join(opts.extra_voice_clone_models),
                         opts.do_sample,
                         opts.top_k,
                         opts.top_p,
@@ -286,6 +357,9 @@ def create_ui() -> gr.Blocks:
                         opts.subtalker_top_p,
                         opts.subtalker_temperature,
                         opts.max_new_tokens,
+                        gr.update(choices=gen_choices),
+                        gr.update(choices=design_choices),
+                        gr.update(choices=clone_choices),
                     ]
 
                 reset_settings_btn.click(  # pylint: disable=no-member
@@ -296,6 +370,9 @@ def create_ui() -> gr.Blocks:
                         device_map,
                         dtype,
                         attn_implementation,
+                        extra_custom_voice_models,
+                        extra_voice_design_models,
+                        extra_voice_clone_models,
                         do_sample,
                         top_k,
                         top_p,
@@ -306,6 +383,9 @@ def create_ui() -> gr.Blocks:
                         subtalker_top_p,
                         subtalker_temperature,
                         max_new_tokens,
+                        gen_model,
+                        design_model,
+                        clone_model,
                     ],
                 )
 
@@ -428,11 +508,11 @@ def create_ui() -> gr.Blocks:
                 return output_paths, speaker_update, language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
-                gr.Warning(f"生成音频所需的显存不足: {str(e)}\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成音频所需的显存不足: {str(e)}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update(), gr.update()
             except Exception as e:  # pylint: disable=duplicate-except
                 traceback.print_exc()
-                gr.Warning(f"生成失败: {str(e)}\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成失败: {str(e)}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update(), gr.update()
 
         def generate_design_fn(
@@ -495,11 +575,11 @@ def create_ui() -> gr.Blocks:
                 return output_paths, language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
-                gr.Warning(f"生成音频所需的显存不足: {str(e)}\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成音频所需的显存不足: {str(e)}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update()
             except Exception as e:  # pylint: disable=duplicate-except
                 traceback.print_exc()
-                gr.Warning(f"生成失败: {str(e)}\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成失败: {str(e)}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update()
 
         def generate_clone_fn(
@@ -570,11 +650,11 @@ def create_ui() -> gr.Blocks:
                 return output_paths, language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
-                gr.Warning(f"生成音频所需的显存不足: {str(e)}\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成音频所需的显存不足: {str(e)}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update()
             except Exception as e:  # pylint: disable=duplicate-except
                 traceback.print_exc()
-                gr.Warning(f"生成失败: {str(e)}\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成失败: {str(e)}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update()
 
         def interrupt_fn() -> None:
