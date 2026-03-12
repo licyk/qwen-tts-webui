@@ -21,4 +21,6 @@ def get_args_parser() -> argparse.ArgumentParser:
     parser.add_argument("--server-port", type=int, default=7860, help="Qwen TTS 启动端口 (默认为 7860)")
     parser.add_argument("--share", action="store_true", help="启用 Gradio 共享")
     parser.add_argument("--version", action="store_true", help="显示版本信息")
+    parser.add_argument("--api", action="store_true", help="启用 API 功能")
+    parser.add_argument("--nowebui", action="store_true", help="仅启动 API 服务器, 不启动 WebUI")
     return parser

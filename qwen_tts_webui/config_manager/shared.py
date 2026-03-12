@@ -1,6 +1,7 @@
 """全局状态管理"""
 
 import threading
+from typing import TYPE_CHECKING
 
 from qwen_tts_webui.config_manager.config import CONFIG_PATH
 from qwen_tts_webui.config_manager.options import (
@@ -12,6 +13,9 @@ from qwen_tts_webui.config_manager.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
 )
+
+if TYPE_CHECKING:
+    from qwen_tts_webui.backend.qwen_backend import QwenTTSBackend
 
 logger = get_logger(
     level=LOGGER_LEVEL,
@@ -71,3 +75,23 @@ opts.load(CONFIG_PATH)
 
 state = State()
 """全局状态实例"""
+
+backend: "QwenTTSBackend | None" = None
+"""全局 backend 实例, 延迟初始化"""
+
+
+def get_backend() -> "QwenTTSBackend":
+    """获取全局 backend 实例,如果不存在则创建
+
+    Returns:
+        QwenTTSBackend: 全局 backend 实例
+    """
+    global backend  # pylint: disable=global-statement
+    if backend is None:
+        logger.info("加载 Qwen TTS WebUI 后端中")
+        from qwen_tts_webui.backend.qwen_backend import QwenTTSBackend
+
+        backend = QwenTTSBackend()
+        logger.debug("已创建全局 backend 实例")
+
+    return backend

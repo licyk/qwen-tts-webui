@@ -7,3 +7,6 @@ soundfile
 modelscope
 huggingface_hub
 gradio==6.4.0
+uvicorn
+fastapi
+pydantic

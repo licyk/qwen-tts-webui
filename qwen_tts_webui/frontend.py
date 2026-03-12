@@ -8,7 +8,6 @@ from typing import Any
 import gradio as gr
 import torch
 
-from qwen_tts_webui.backend.qwen_backend import QwenTTSBackend
 from qwen_tts_webui.task_manager.call_queue import (
     wrap_gradio_call,
     wrap_queued_call,
@@ -29,10 +28,9 @@ from qwen_tts_webui.backend.memory_manager import (
 from qwen_tts_webui.config_manager.shared import (
     opts,
     state,
+    get_backend,
 )
 from qwen_tts_webui.version import VERSION
-
-backend = QwenTTSBackend()
 
 
 def create_ui() -> gr.Blocks:
@@ -408,8 +406,8 @@ def create_ui() -> gr.Blocks:
             Returns:
                 (tuple[str, str | None, Any, Any]): 实际发言人, 实际语言, 发言人组件更新, 语言组件更新
             """
-            speakers = backend.get_supported_speakers() or []
-            languages = backend.get_supported_languages() or []
+            speakers = get_backend().get_supported_speakers() or []
+            languages = get_backend().get_supported_languages() or []
 
             speaker_choices = ["default"] + speakers
             if "auto" in languages:
@@ -441,7 +439,7 @@ def create_ui() -> gr.Blocks:
             Returns:
                 tuple[str | None, Any]: 实际语言, 语言组件更新
             """
-            languages = backend.get_supported_languages() or []
+            languages = get_backend().get_supported_languages() or []
             if "auto" in languages:
                 language_choices = languages
             else:
@@ -478,7 +476,7 @@ def create_ui() -> gr.Blocks:
             try:
                 start_time = time.perf_counter()
                 gr.Info(f"加载 {model_name} 模型中")
-                backend.load_model(
+                get_backend().load_model(
                     model_name=model_name,
                     api_type=opts.api_type,
                     device_map=opts.device_map,
@@ -488,7 +486,7 @@ def create_ui() -> gr.Blocks:
                 actual_speaker, actual_language, speaker_update, language_update = update_metadata(speaker, language)
                 for i, t in enumerate(text_list, start=1):
                     gr.Info(f"生成音频中 ({i}/{len(text_list)})")
-                    output_path = backend.generate_custom_voice(
+                    output_path = get_backend().generate_custom_voice(
                         text=t,
                         speaker=actual_speaker,
                         language=actual_language,
@@ -546,7 +544,7 @@ def create_ui() -> gr.Blocks:
             try:
                 start_time = time.perf_counter()
                 gr.Info(f"加载 {model_name} 模型中")
-                backend.load_model(
+                get_backend().load_model(
                     model_name=model_name,
                     api_type=opts.api_type,
                     device_map=opts.device_map,
@@ -556,7 +554,7 @@ def create_ui() -> gr.Blocks:
                 actual_language, language_update = update_metadata_simple(language)
                 for i, t in enumerate(text_list, start=1):
                     gr.Info(f"生成音频中 ({i}/{len(text_list)})")
-                    output_path = backend.generate_voice_design(
+                    output_path = get_backend().generate_voice_design(
                         text=t,
                         instruct=instruct,
                         language=actual_language,
@@ -619,7 +617,7 @@ def create_ui() -> gr.Blocks:
             try:
                 start_time = time.perf_counter()
                 gr.Info(f"加载 {model_name} 模型中")
-                backend.load_model(
+                get_backend().load_model(
                     model_name=model_name,
                     api_type=opts.api_type,
                     device_map=opts.device_map,
@@ -629,7 +627,7 @@ def create_ui() -> gr.Blocks:
                 actual_language, language_update = update_metadata_simple(language)
                 for i, t in enumerate(text_list, start=1):
                     gr.Info(f"生成音频中 ({i}/{len(text_list)})")
-                    output_path = backend.generate_voice_clone(
+                    output_path = get_backend().generate_voice_clone(
                         text=t,
                         language=actual_language,
                         ref_audio=Path(ref_audio),
