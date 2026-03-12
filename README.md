@@ -10,8 +10,8 @@ _✨生成音频如此简单_
     <a href="https://github.com/licyk/qwen-tts-webui/issues">
       <img src="https://img.shields.io/github/issues/licyk/qwen-tts-webui?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Issues">
     </a>
-    <a href="https://github.com/licyk/qwen-tts-webui/commits/dev">
-      <img src="https://flat.badgen.net/github/last-commit/licyk/qwen-tts-webui/dev?icon=github&color=green&label=last%20dev%20commit" alt="Commit">
+    <a href="https://github.com/licyk/qwen-tts-webui/commits/main">
+      <img src="https://flat.badgen.net/github/last-commit/licyk/qwen-tts-webui/main?icon=github&color=green&label=last%20main%20commit" alt="Commit">
     </a>
     <a href="https://github.com/licyk/qwen-tts-webui/actions/workflows/py-lint.yml">
       <img src="https://github.com/licyk/qwen-tts-webui/actions/workflows/py-lint.yml/badge.svg" alt="Ruff Lint">
