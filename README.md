@@ -13,9 +13,6 @@ _✨生成音频如此简单_
     <a href="https://github.com/licyk/qwen-tts-webui/commits/dev">
       <img src="https://flat.badgen.net/github/last-commit/licyk/qwen-tts-webui/dev?icon=github&color=green&label=last%20dev%20commit" alt="Commit">
     </a>
-    <a href="https://github.com/licyk/qwen-tts-webui/actions/workflows/sync_repo.yml">
-      <img src="https://github.com/licyk/qwen-tts-webui/actions/workflows/sync_repo.yml/badge.svg" alt="Sync">
-    </a>
     <a href="https://github.com/licyk/qwen-tts-webui/actions/workflows/py-lint.yml">
       <img src="https://github.com/licyk/qwen-tts-webui/actions/workflows/py-lint.yml/badge.svg" alt="Ruff Lint">
     </a>
@@ -23,7 +20,39 @@ _✨生成音频如此简单_
 
 </div>
 
-# Qwen TTS WebUI
+- [Qwen TTS WebUI](#qwen-tts-webui)
+- [简介](#简介)
+- [安装](#安装)
+  - [使用整合包 (仅 Windows)](#使用整合包-仅-windows)
+  - [使用安装器 (Windows / Linux / MacOS)](#使用安装器-windows--linux--macos)
+  - [手动安装 (Windows / Linux / MacOS)](#手动安装-windows--linux--macos)
+- [使用](#使用)
+  - [可使用的模型](#可使用的模型)
+  - [启动参数](#启动参数)
+- [API 使用](#api-使用)
+  - [启动 API 服务](#启动-api-服务)
+    - [方式 1: 启动 WebUI 并启用 API](#方式-1-启动-webui-并启用-api)
+    - [方式 2: 仅启动 API 服务器 (不启动 WebUI)](#方式-2-仅启动-api-服务器-不启动-webui)
+    - [自定义服务器地址和端口](#自定义服务器地址和端口)
+  - [API 端点](#api-端点)
+    - [1. 声音生成 (Custom Voice)](#1-声音生成-custom-voice)
+    - [2. 声音设计 (Voice Design)](#2-声音设计-voice-design)
+    - [3. 声音克隆 (Voice Clone)](#3-声音克隆-voice-clone)
+    - [4. 获取可用模型列表](#4-获取可用模型列表)
+    - [5. 获取支持的发言人列表](#5-获取支持的发言人列表)
+    - [6. 获取支持的语言列表](#6-获取支持的语言列表)
+    - [7. 获取配置选项](#7-获取配置选项)
+    - [8. 中断当前任务](#8-中断当前任务)
+  - [高级参数](#高级参数)
+  - [完整示例脚本](#完整示例脚本)
+  - [错误处理](#错误处理)
+  - [注意事项](#注意事项)
+- [使用的项目](#使用的项目)
+- [许可证](#许可证)
+
+***
+
+# 简介
 一个基于 [Gradio](https://github.com/gradio-app/gradio) 的 Web 用户界面，提供通义千问 [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) 系列模型进行文本到语音的转换。
 
 
@@ -89,6 +118,7 @@ cmd /k start.bat # 或者直接双击 start.bat
 ```
 usage: launch.py [-h] [--debug] [--reinstall-torch] [--disable-pypi-cn-mirror] [--disable-uv] [--skip-check]
                  [--no-inbrowser] [--server-name SERVER_NAME] [--server-port SERVER_PORT] [--share] [--version]
+                 [--api] [--nowebui]
 
 Qwen TTS WebUI 命令行参数
 
@@ -107,6 +137,8 @@ options:
                         Qwen TTS 启动端口 (默认为 7860)
   --share               启用 Gradio 共享
   --version             显示版本信息
+  --api                 启用 API 功能
+  --nowebui             仅启动 API 服务器, 不启动 WebUI
 ```
 
 
