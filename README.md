@@ -189,7 +189,7 @@ import base64
 
 url = "http://127.0.0.1:7860/qwenapi/v1/custom-voice"
 data = {
-    "model_name": "Qwen/Qwen2.5-TTS-Custom",
+    "model_name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
     "text": "你好,这是一个测试。",
     "instruct": "用温柔的语气说。",
     "speaker": None,  # 可选,默认使用第一个发言人
@@ -221,7 +221,7 @@ import base64
 
 url = "http://127.0.0.1:7860/qwenapi/v1/voice-design"
 data = {
-    "model_name": "Qwen/Qwen2.5-TTS-Design",
+    "model_name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
     "text": "你好,这是一个测试。",
     "instruct": "体现撒娇稚嫩的女声,音调偏高且起伏明显。",
     "language": None,  # 可选,默认自动检测
@@ -256,10 +256,10 @@ with open("reference_audio.wav", "rb") as f:
 
 url = "http://127.0.0.1:7860/qwenapi/v1/voice-clone"
 data = {
-    "model_name": "Qwen/Qwen2.5-TTS",
+    "model_name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
     "text": "你好,这是一个测试。",
     "ref_audio_base64": ref_audio_base64,
-    "ref_text": "参考音频中说话的内容",  # 可选
+    "ref_text": "参考音频中说话的内容",  # 可选, 一般不用时效果更好
     "language": None,  # 可选,默认自动检测
     "segment_gen": False
 }
@@ -363,7 +363,7 @@ print(result["message"])
 
 ```python
 data = {
-    "model_name": "Qwen/Qwen2.5-TTS-Custom",
+    "model_name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
     "text": "你好,这是一个测试。",
     # ... 其他必需参数 ...
     
@@ -398,7 +398,7 @@ def custom_voice_example():
     """声音生成示例"""
     url = "http://127.0.0.1:7860/qwenapi/v1/custom-voice"
     data = {
-        "model_name": "Qwen/Qwen2.5-TTS-Custom",
+        "model_name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
         "text": "你好,这是一个声音生成测试。",
         "instruct": "用温柔的语气说。",
     }
@@ -428,7 +428,7 @@ def voice_clone_example():
     
     url = "http://127.0.0.1:7860/qwenapi/v1/voice-clone"
     data = {
-        "model_name": "Qwen/Qwen2.5-TTS",
+        "model_name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
         "text": "你好,这是一个声音克隆测试。",
         "ref_audio_base64": ref_audio_base64,
         "ref_text": "参考音频的文本内容",

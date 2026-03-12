@@ -92,6 +92,7 @@ def webui() -> None:
             "redoc_url": "/redoc",
         },
     )
+    local_url = local_url.rstrip("/")
     logger.info("Qwen TTS WebUI 已启动, 界面访问地址: %s", local_url)
     if share_url:
         logger.info("Qwen TTS WebUI 远程访问地址: %s", share_url)
