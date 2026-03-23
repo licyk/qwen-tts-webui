@@ -174,7 +174,11 @@ class QwenTTSBackend:
         except OutOfMemoryError as e:
             logger.error("加载 Qwen TTS 模型 %s 时发生内存不足: %s", self.model_name, e)
             self.unload_model()
-            raise e
+            raise OutOfMemoryError(f"加载 Qwen TTS 模型 {self.model_name} 时发生内存不足: {e}") from e
+        except OSError as e: # pylint: disable=bad-except-order
+            logger.error("加载 Qwen TTS 模型 %s 时因模型文件损坏发生错误: %s", self.model_name, e)
+            self.unload_model()
+            raise OSError(f"加载 Qwen TTS 模型 {self.model_name} 时因模型文件损坏发生错误: {e}\n\n可尝试将 '{model_path}' 删除后再试") from e
         except Exception as e:  # pylint: disable=duplicate-except
             logger.error("加载 Qwen TTS 模型 %s 时发生未知错误: %s", self.model_name, e)
             try:
