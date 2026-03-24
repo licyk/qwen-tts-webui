@@ -6,8 +6,8 @@ from typing import (
     Callable,
 )
 
-from qwen_tts_webui.task_manager.fifo_lock import FIFOLock
-from qwen_tts_webui.config_manager.shared import state
+from qwen_tts_webui.task_manager.fifo_lock import FIFOLock  # type: ignore
+from qwen_tts_webui.config_manager.shared import state  # type: ignore
 
 queue_lock = FIFOLock()
 """全局队列锁"""
@@ -31,7 +31,7 @@ def wrap_queued_call(
             res = func(*args, **kwargs)
         return res
 
-    return wrapper
+    return wrapper  # type: ignore
 
 
 def wrap_gradio_call(
@@ -55,4 +55,4 @@ def wrap_gradio_call(
             state.end()
         return res
 
-    return wrapper
+    return wrapper  # type: ignore

@@ -8,9 +8,16 @@ from typing import Any
 import gradio as gr
 import torch
 
-from qwen_tts_webui.task_manager.call_queue import (
-    wrap_gradio_call,
-    wrap_queued_call,
+from qwen_tts_webui.task_manager.submission import (
+    add_voice_generation_task_to_queue,
+    add_voice_design_task_to_queue,
+    add_voice_clone_task_to_queue,
+)
+from qwen_tts_webui.task_manager.ui_updates import update_queue_display
+from qwen_tts_webui.task_manager.ui_actions import (
+    move_up_task_action,
+    move_down_task_action,
+    cancel_task_action,
 )
 from qwen_tts_webui.config_manager.config import (
     CONFIG_PATH,
@@ -157,6 +164,53 @@ def create_ui() -> gr.Blocks:
                             "7. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.\n"
                             "8. **使用本地模型**: 如需使用本地路径的模型, 请先在`设置`页面的`额外模型列表`中添加本地模型路径, 并将`下载模型的 API 类型`设置为 `local`, 保存设置后即可在模型选择中使用本地模型."
                         )
+
+            with gr.Tab("队列管理", id="queue_management"):
+                # 队列管理页面 UI 组件
+                gr.Markdown("💡 本地部署版本，仅支持单用户使用")
+                
+                with gr.Row():
+                    refresh_queue_btn = gr.Button("🔄 手动刷新队列状态", variant="secondary")
+                
+                queue_html = gr.HTML(
+                    label="队列状态",
+                    value="<p>正在加载队列信息...</p>",
+                )
+                
+                # 隐藏的任务 ID 输入，用于接收按钮点击传递的任务 ID
+                task_id_input = gr.Textbox(visible=False, elem_id="task_id_input")
+                
+                # 操作结果提示
+                action_message = gr.HTML(visible=True)
+                
+                # 隐藏的触发按钮（用于 JavaScript 调用）
+                hidden_action_btn = gr.Button("执行操作", visible=False, elem_id="hidden_action_btn")
+                
+                # 处理动作按钮点击
+                def handle_action(task_action_data: str):
+                    if not task_action_data or ':' not in task_action_data:
+                        return update_queue_display(), ""
+                    
+                    action, task_id = task_action_data.split(':', 1)
+                    
+                    try:
+                        if action == 'move_up':
+                            return move_up_task_action(task_id)
+                        elif action == 'move_down':
+                            return move_down_task_action(task_id)
+                        elif action == 'cancel':
+                            return cancel_task_action(task_id)
+                        else:
+                            return update_queue_display(), f"❌ 未知操作：{action}"
+                    except Exception as e:
+                        return update_queue_display(), f"❌ 操作失败：{str(e)}"
+                
+                # 绑定隐藏按钮的点击事件
+                hidden_action_btn.click(
+                    fn=handle_action,
+                    inputs=task_id_input,
+                    outputs=[queue_html, action_message],
+                )
 
             with gr.Tab("音频浏览", id="audio_browser"):
                 with gr.Row():
@@ -668,7 +722,7 @@ def create_ui() -> gr.Blocks:
             outputs=[gen_button, stop_gen_button],
             queue=False,
         ).then(
-            fn=wrap_queued_call(wrap_gradio_call(generate_voice_fn)),
+            fn=add_voice_generation_task_to_queue,
             inputs=[gen_model, gen_text, gen_instruct, gen_speaker, gen_language, gen_segment],
             outputs=[gen_audio_list, gen_speaker, gen_language],
         )
@@ -689,7 +743,7 @@ def create_ui() -> gr.Blocks:
             outputs=[design_button, stop_design_button],
             queue=False,
         ).then(
-            fn=wrap_queued_call(wrap_gradio_call(generate_design_fn)),
+            fn=add_voice_design_task_to_queue,
             inputs=[design_model, design_text, design_instruct, design_language, design_segment],
             outputs=[design_audio_list, design_language],
         )
@@ -710,7 +764,7 @@ def create_ui() -> gr.Blocks:
             outputs=[clone_button, stop_clone_button],
             queue=False,
         ).then(
-            fn=wrap_queued_call(wrap_gradio_call(generate_clone_fn)),
+            fn=add_voice_clone_task_to_queue,
             inputs=[clone_model, clone_text, clone_language, clone_audio, clone_ref_text, clone_segment],
             outputs=[clone_audio_list, clone_language],
         )
@@ -725,5 +779,15 @@ def create_ui() -> gr.Blocks:
             outputs=[clone_button, stop_clone_button],
             queue=False,
         )
+
+        # 队列管理页面事件绑定
+        # 手动刷新按钮
+        refresh_queue_btn.click(
+            fn=update_queue_display,
+            outputs=queue_html,
+        )
+        
+        # TODO: 定时刷新功能在 Gradio 6.x 中需要寻找正确的实现方式
+        # 目前仅支持手动刷新
 
     return demo

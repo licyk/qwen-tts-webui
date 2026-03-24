@@ -77,11 +77,14 @@ state = State()
 """全局状态实例"""
 
 backend: "QwenTTSBackend | None" = None
-"""全局 backend 实例, 延迟初始化"""
+"""全局 backend 实例，延迟初始化"""
+
+queue_manager: "QueueManager | None" = None
+"""全局队列管理器实例，延迟初始化"""
 
 
 def get_backend() -> "QwenTTSBackend":
-    """获取全局 backend 实例,如果不存在则创建
+    """获取全局 backend 实例，如果不存在则创建
 
     Returns:
         QwenTTSBackend: 全局 backend 实例
@@ -95,3 +98,20 @@ def get_backend() -> "QwenTTSBackend":
         logger.debug("已创建全局 backend 实例")
 
     return backend
+
+
+def get_queue_manager() -> "QueueManager":
+    """获取全局队列管理器实例，如果不存在则创建
+
+    Returns:
+        QueueManager: 全局队列管理器实例
+    """
+    global queue_manager  # pylint: disable=global-statement
+    if queue_manager is None:
+        logger.info("初始化队列管理器中")
+        from qwen_tts_webui.task_manager.queue_manager import QueueManager
+
+        queue_manager = QueueManager()
+        logger.debug("已创建全局队列管理器实例")
+
+    return queue_manager
