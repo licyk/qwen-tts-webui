@@ -78,7 +78,9 @@ def create_ui() -> gr.Blocks:
                             "3. `发言人`和`语言`选项默认分别只有`default`和`auto`, 当点击`开始生成`并且生成结束后, 这两个选项将会刷新, 刷新后即可选择其他选项.\n"
                             "4. 如果需要分段生成音频, 可启用`分段生成 (按行切分文本)`选项.\n"
                             "5. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.\n"
-                            "6. **使用本地模型**: 如需使用本地路径的模型, 请先在`设置`页面的`额外模型列表`中添加本地模型路径, 并将`下载模型的 API 类型`设置为 `local`, 保存设置后即可在模型选择中使用本地模型."
+                            "6. 如需使用本地路径的模型 (使用自己手动下载下来的模型), 请先在`设置`页面的`额外模型列表`中添加本地模型路径, 并将`下载模型的 API 类型`设置为 `local`, 保存设置后即可在模型选择中使用本地模型. 通常情况下不需要修改该设置, 默认设置下会将模型自动从 HuggingFace / ModelScope 下载到本地并使用.\n"
+                            "7. 运行时如果提示模型文件损坏, 可尝试将报错中提示的路径进行删除.\n"
+                            "8. 如果因修改设置后导致的报错, 请重置设置并重新启动 Qwen TTS WebUI."
                         )
 
             with gr.Tab("声音设计", id="voice_design"):
@@ -116,7 +118,9 @@ def create_ui() -> gr.Blocks:
                             "3. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n"
                             "4. 如果需要分段生成音频, 可启用`分段生成 (按行切分文本)`选项.\n"
                             "5. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.\n"
-                            "6. **使用本地模型**: 如需使用本地路径的模型, 请先在`设置`页面的`额外模型列表`中添加本地模型路径, 并将`下载模型的 API 类型`设置为 `local`, 保存设置后即可在模型选择中使用本地模型."
+                            "6. 如需使用本地路径的模型 (使用自己手动下载下来的模型), 请先在`设置`页面的`额外模型列表`中添加本地模型路径, 并将`下载模型的 API 类型`设置为 `local`, 保存设置后即可在模型选择中使用本地模型. 通常情况下不需要修改该设置, 默认设置下会将模型自动从 HuggingFace / ModelScope 下载到本地并使用.\n"
+                            "7. 运行时如果提示模型文件损坏, 可尝试将报错中提示的路径进行删除.\n"
+                            "8. 如果因修改设置后导致的报错, 请重置设置并重新启动 Qwen TTS WebUI."
                         )
 
             with gr.Tab("声音克隆", id="voice_clone"):
@@ -155,7 +159,9 @@ def create_ui() -> gr.Blocks:
                             "5. `语言`选项默认只有`auto`, 当点击`开始生成`并且生成结束后, 这个选项将会刷新, 刷新后即可选择其他选项.\n"
                             "6. 如果需要分段生成音频, 可启用`分段生成 (按行切分文本)`选项.\n"
                             "7. 生成的音频可在`音频浏览`中查看, 或者在 Qwen TTS WebUI 的 `outputs` 文件夹中查看.\n"
-                            "8. **使用本地模型**: 如需使用本地路径的模型, 请先在`设置`页面的`额外模型列表`中添加本地模型路径, 并将`下载模型的 API 类型`设置为 `local`, 保存设置后即可在模型选择中使用本地模型."
+                            "8. 如需使用本地路径的模型 (使用自己手动下载下来的模型), 请先在`设置`页面的`额外模型列表`中添加本地模型路径, 并将`下载模型的 API 类型`设置为 `local`, 保存设置后即可在模型选择中使用本地模型. 通常情况下不需要修改该设置, 默认设置下会将模型自动从 HuggingFace / ModelScope 下载到本地并使用.\n"
+                            "9. 运行时如果提示模型文件损坏, 可尝试将报错中提示的路径进行删除.\n"
+                            "10. 如果因修改设置后导致的报错, 请重置设置并重新启动 Qwen TTS WebUI."
                         )
 
             with gr.Tab("音频浏览", id="audio_browser"):
@@ -184,10 +190,11 @@ def create_ui() -> gr.Blocks:
                     save_settings_btn = gr.Button("保存设置", variant="primary")
                     reset_settings_btn = gr.Button("重置设置", variant="secondary")
 
+                gr.Markdown("**修改设置前请三思而后行, 如果遇到修改设置后导致报错, 请点击重置设置后再重新启动.**")
                 gr.Markdown("### 模型加载设置")
                 api_type = gr.Dropdown(label="下载模型的 API 类型", choices=["huggingface", "modelscope", "local"], value=opts.api_type)
                 gr.Markdown(
-                    "**提示**: 当使用本地路径的模型时,需要将 API 类型设置为 `local`。\n"
+                    "**提示**: 当使用本地路径的模型时, 需要将 API 类型设置为 `local`. 如果您未手动下载任何模型并且未在**额外模型列表**选项填写本地已下载好的模型路径, 请不要修改该设置!\n"
                     "- `huggingface`: 从 HuggingFace 下载模型 (优先使用本地缓存)\n"
                     "- `modelscope`: 从 ModelScope 下载模型 (优先使用本地缓存)\n"
                     "- `local`: 直接从本地路径加载模型,不进行任何网络请求"
@@ -199,7 +206,7 @@ def create_ui() -> gr.Blocks:
                 attn_implementation = gr.Dropdown(label="加速方案", choices=[str(None)] + ATTN_IMPL_LIST, value=str(opts.attn_implementation))
 
                 gr.Markdown("### 额外模型列表")
-                gr.Markdown("在下方输入框中每行输入一个模型名称或路径,这些模型将会添加到对应功能的模型选择列表中")
+                gr.Markdown("在下方输入框中每行输入一个模型名称或路径, 这些模型将会添加到对应功能的模型选择列表中")
                 extra_custom_voice_models = gr.Textbox(
                     label="声音生成额外模型",
                     placeholder="每行一个模型名称或路径\n例如:\nQwen/Qwen-TTS-Custom\n/path/to/local/model",
