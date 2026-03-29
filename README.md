@@ -26,6 +26,7 @@ _✨生成音频如此简单_
   - [使用整合包 (仅 Windows)](#使用整合包-仅-windows)
   - [使用安装器 (Windows / Linux / MacOS)](#使用安装器-windows--linux--macos)
   - [手动安装 (Windows / Linux / MacOS)](#手动安装-windows--linux--macos)
+  - [云端在线体验](#云端在线体验)
 - [使用](#使用)
   - [可使用的模型](#可使用的模型)
   - [启动参数](#启动参数)
@@ -96,6 +97,10 @@ cmd /k start.bat # 或者直接双击 start.bat
 ```
 
 或者手动创建并进入虚拟环境并进入，再运行`python launch.py`启动该项目。
+
+
+## 云端在线体验
+[Qwen TTS WebUI Colab Jupyter NoteBook - licyk/sd-webui-all-in-one](https://github.com/licyk/sd-webui-all-in-one?tab=readme-ov-file#qwen-tts-webui-colab-jupyter-notebook)
 
 
 # 使用
