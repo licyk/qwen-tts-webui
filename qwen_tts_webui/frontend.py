@@ -33,6 +33,31 @@ from qwen_tts_webui.config_manager.shared import (
 from qwen_tts_webui.version import VERSION
 
 
+def update_token_counter(
+    text: str,
+) -> str:
+    """更新 token 计数器
+
+    Args:
+        text (str): 要计算 token 数量的文本
+
+    Returns:
+        str: HTML 格式的 token 数量信息
+    """
+    if not text or text.strip() == "":
+        return "<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: 0</div>"
+
+    try:
+        backend = get_backend()
+        if backend.model is None:
+            return "<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: NaN (模型未加载)</div>"
+
+        token_count = backend.count_tokens(text)
+        return f"<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: {token_count}</div>"
+    except Exception as e:
+        return f"<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: 计算失败 ({str(e)})</div>"
+
+
 def create_ui() -> gr.Blocks:
     """创建 Gradio 界面
 
@@ -48,7 +73,8 @@ def create_ui() -> gr.Blocks:
                     with gr.Column():
                         gen_model_choices = QWEN_TTS_CUSTOM_VOICE_MODEL_LIST + opts.extra_custom_voice_models
                         gen_model = gr.Dropdown(label="模型选择", choices=gen_model_choices, value=gen_model_choices[0], interactive=True)
-                        gen_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
+                        gen_token_counter = gr.HTML(value="<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: 0</div>")
+                        gen_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5, show_label=False)
                         gen_instruct = gr.Textbox(label="声音特征描述", placeholder="例如: 用温柔的语气说。", lines=3)
                         with gr.Row():
                             gen_speaker = gr.Dropdown(label="发言人", choices=["default"], value="default", interactive=True)
@@ -89,7 +115,8 @@ def create_ui() -> gr.Blocks:
                     with gr.Column():
                         design_model_choices = QWEN_TTS_VOICE_DESIGN_MODEL_LIST + opts.extra_voice_design_models
                         design_model = gr.Dropdown(label="模型选择", choices=design_model_choices, value=design_model_choices[0], interactive=True)
-                        design_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
+                        design_token_counter = gr.HTML(value="<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: 0</div>")
+                        design_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5, show_label=False)
                         design_instruct = gr.Textbox(
                             label="声音特征描述", placeholder="例如：体现撒娇稚嫩的女声，音调偏高且起伏明显，营造出黏人、做作又刻意卖萌的听觉效果。", lines=3
                         )
@@ -130,7 +157,8 @@ def create_ui() -> gr.Blocks:
                     with gr.Column():
                         clone_model_choices = QWEN_TTS_BASE_MODEL_LIST + opts.extra_voice_clone_models
                         clone_model = gr.Dropdown(label="模型选择", choices=clone_model_choices, value=clone_model_choices[0], interactive=True)
-                        clone_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5)
+                        clone_token_counter = gr.HTML(value="<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: 0</div>")
+                        clone_text = gr.Textbox(label="合成文本", placeholder="请输入要合成的文本...", lines=5, show_label=False)
                         clone_language = gr.Dropdown(label="语言", choices=["auto"], value="auto", interactive=True)
                         clone_audio = gr.Audio(label="参考音频文件", type="filepath")
                         clone_ref_text = gr.Textbox(label="参考音频文本描述", placeholder="请输入参考音频对应的文本内容 (描述参考音频文件中说话的内容, 可不填)", lines=2)
@@ -734,6 +762,24 @@ def create_ui() -> gr.Blocks:
             cancels=[clone_event],
             outputs=[clone_button, stop_clone_button],
             queue=False,
+        )
+
+        gen_text.change(  # pylint: disable=no-member
+            fn=wrap_queued_call(update_token_counter),
+            inputs=[gen_text],
+            outputs=[gen_token_counter],
+        )
+
+        design_text.change(  # pylint: disable=no-member
+            fn=wrap_queued_call(update_token_counter),
+            inputs=[design_text],
+            outputs=[design_token_counter],
+        )
+
+        clone_text.change(  # pylint: disable=no-member
+            fn=wrap_queued_call(update_token_counter),
+            inputs=[clone_text],
+            outputs=[clone_token_counter],
         )
 
     return demo

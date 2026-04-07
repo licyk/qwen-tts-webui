@@ -176,11 +176,53 @@ class QwenTTSBackend:
             tmp_name = self.model_name
             self.unload_model()
             raise OutOfMemoryError(f"加载 Qwen TTS 模型 {tmp_name} 时发生内存不足: {e}") from e
-        except OSError as e: # pylint: disable=bad-except-order
-            logger.error("加载 Qwen TTS 模型 %s 时因模型文件损坏发生错误: %s", self.model_name, e)
-            tmp_name = self.model_name
-            self.unload_model()
-            raise OSError(f"加载 Qwen TTS 模型 {tmp_name} 时因模型文件损坏发生错误: {e}\n\n可尝试将 '{model_path}' 删除后再试") from e
+        except OSError as e:  # pylint: disable=bad-except-order
+            logger.warning("加载 Qwen TTS 模型 %s 时因模型文件损坏发生错误: %s", self.model_name, e)
+            logger.info("尝试重新下载模型 %s", self.model_name)
+
+            # 根据 api_type 重新下载模型
+            try:
+                if api_type == "local":
+                    # 本地路径模式无法重新下载
+                    tmp_name = self.model_name
+                    self.unload_model()
+                    raise OSError(f"加载 Qwen TTS 模型 {tmp_name} 时因模型文件损坏发生错误: {e}\n\n提示: 本地路径模式无法自动重新下载, 请手动检查模型文件 '{model_path}'") from e
+                elif api_type == "huggingface":
+                    logger.info("从 HuggingFace 重新下载 %s 中", self.model_name)
+                    model_path = self.hub.hf_api.snapshot_download(
+                        repo_id=model_name,
+                        repo_type="model",
+                        local_files_only=False,
+                    )
+                    logger.info("%s 模型从 HuggingFace 重新下载完成", self.model_name)
+                elif api_type == "modelscope":
+                    logger.info("从 ModelScope 重新下载 %s 中", self.model_name)
+                    model_path = snapshot_download(
+                        repo_id=model_name,
+                        repo_type="model",
+                        local_files_only=False,
+                    )
+                    logger.info("%s 模型从 ModelScope 重新下载完成", self.model_name)
+
+                # 重新尝试加载模型
+                logger.info("重新加载模型 %s", self.model_name)
+                self.model = Qwen3TTSModel.from_pretrained(
+                    pretrained_model_name_or_path=model_path,
+                    device_map=device_map,
+                    dtype=dtype,
+                    attn_implementation=attn_implementation,
+                )
+                logger.info("%s 模型重新加载成功", self.model_name)
+            except OSError as retry_e:
+                logger.error("重新下载并加载模型 %s 失败: %s", self.model_name, retry_e)
+                tmp_name = self.model_name
+                self.unload_model()
+                raise OSError(f"加载 Qwen TTS 模型 {tmp_name} 时因模型文件损坏发生错误, 重新下载后仍然失败: {retry_e}\n\n可尝试手动将 '{model_path}' 删除后再试") from retry_e
+            except Exception as retry_e:
+                logger.error("重新下载模型 %s 时发生错误: %s", self.model_name, retry_e)
+                tmp_name = self.model_name
+                self.unload_model()
+                raise RuntimeError(f"重新下载 Qwen TTS 模型 {tmp_name} 时发生错误: {retry_e}") from retry_e
         except Exception as e:  # pylint: disable=duplicate-except
             logger.error("加载 Qwen TTS 模型 %s 时发生未知错误: %s", self.model_name, e)
             try:
@@ -210,6 +252,35 @@ class QwenTTSBackend:
             (list[str] | None): 语言列表, 如果模型不支持指定任何语言时则返回 None
         """
         return self.model.get_supported_languages()
+
+    def count_tokens(
+        self,
+        text: str,
+    ) -> int:
+        """计算文本的 token 数量
+
+        Args:
+            text (str):
+                要计算 token 数量的文本
+
+        Returns:
+            int: token 数量
+
+        Raises:
+            ValueError:
+                当模型未加载时
+        """
+        if self.model is None:
+            raise ValueError("模型未加载, 无法计算 token 数量")
+
+        # 使用 processor 进行 tokenize
+        inputs = self.model.processor(text=text, return_tensors="pt", padding=True)
+        input_ids = inputs["input_ids"]
+
+        # 返回 token 数量
+        token_count = input_ids.shape[-1]
+        logger.debug("文本 '%s' 的 token 数量: %d", text[:50] + "..." if len(text) > 50 else text, token_count)
+        return token_count
 
     def generate_custom_voice(
         self,

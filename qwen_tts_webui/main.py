@@ -91,6 +91,17 @@ def webui() -> None:
             "docs_url": "/docs",
             "redoc_url": "/redoc",
         },
+        css="""
+        .token-counter {
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #666;
+            padding: 4px 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        """,
     )
     local_url = local_url.rstrip("/")
     logger.info("Qwen TTS WebUI 已启动, 界面访问地址: %s", local_url)
