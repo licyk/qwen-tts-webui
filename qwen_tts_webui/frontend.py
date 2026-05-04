@@ -50,7 +50,7 @@ def update_token_counter(
     try:
         backend = get_backend()
         if backend.model is None:
-            return "<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: NaN (模型未加载)</div>"
+            return "<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: NaN (模型未加载, 可点击开始生成按钮加载模型)</div>"
 
         token_count = backend.count_tokens(text)
         return f"<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: {token_count}</div>"

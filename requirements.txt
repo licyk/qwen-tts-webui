@@ -1,7 +1,7 @@
 torch
 torchvision
 torchaudio
-qwen-tts
+qwen-tts>=0.1.1
 psutil
 soundfile
 modelscope
