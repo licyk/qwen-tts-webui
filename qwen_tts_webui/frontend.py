@@ -56,7 +56,7 @@ def update_token_counter(
         token_count = backend.count_tokens(text)
         return f"<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: {token_count}</div>"
     except Exception as e:
-        return f"<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: 计算失败 ({str(e)})</div>"
+        return f"<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: 计算失败 ({e!s})</div>"
 
 
 def load_selected_model(
@@ -598,11 +598,11 @@ def create_ui() -> gr.Blocks:
                 return output_paths, speaker_update, language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
-                gr.Warning(f"生成音频所需的显存不足: {str(e)}\n\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成音频所需的显存不足: {e!s}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update(), gr.update()
             except Exception as e:  # pylint: disable=duplicate-except
                 traceback.print_exc()
-                gr.Warning(f"生成失败: {str(e)}\n\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成失败: {e!s}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update(), gr.update()
 
         def generate_design_fn(
@@ -650,11 +650,11 @@ def create_ui() -> gr.Blocks:
                 return output_paths, language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
-                gr.Warning(f"生成音频所需的显存不足: {str(e)}\n\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成音频所需的显存不足: {e!s}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update()
             except Exception as e:  # pylint: disable=duplicate-except
                 traceback.print_exc()
-                gr.Warning(f"生成失败: {str(e)}\n\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成失败: {e!s}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update()
 
         def generate_clone_fn(
@@ -710,11 +710,11 @@ def create_ui() -> gr.Blocks:
                 return output_paths, language_update
             except OutOfMemoryError as e:
                 traceback.print_exc()
-                gr.Warning(f"生成音频所需的显存不足: {str(e)}\n\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成音频所需的显存不足: {e!s}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update()
             except Exception as e:  # pylint: disable=duplicate-except
                 traceback.print_exc()
-                gr.Warning(f"生成失败: {str(e)}\n\n详细错误信息请在控制台中查看")
+                gr.Warning(f"生成失败: {e!s}\n\n详细错误信息请在控制台中查看")
                 return None, gr.update()
 
         def interrupt_fn() -> None:
