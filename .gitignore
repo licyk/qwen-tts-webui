@@ -5,7 +5,8 @@ __pycache__/
 dist/
 build/
 *.egg-info/
-outputs/
-models/
-cache/
-config.json
+/outputs/
+/models/
+/cache/
+/config.json
+/voices/

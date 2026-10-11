@@ -23,4 +23,10 @@ def get_args_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="store_true", help="显示版本信息")
     parser.add_argument("--api", action="store_true", help="启用 API 功能")
     parser.add_argument("--nowebui", action="store_true", help="仅启动 API 服务器, 不启动 WebUI")
+    parser.add_argument(
+        "--api-key",
+        type=str,
+        default=None,
+        help="API 访问密钥, 设置后请求需要携带 `Authorization: Bearer <key>` 请求头 (也可通过 QWEN_TTS_API_KEY 环境变量设置)",
+    )
     return parser

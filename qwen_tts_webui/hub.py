@@ -67,7 +67,8 @@ class HubManager:
 
         if ms_token is not None:
             os.environ["MODELSCOPE_API_TOKEN"] = ms_token
-            self.ms_api.login(access_token=ms_token)
+            # 位置参数兼容新旧版本 ModelScope (旧版本参数名为 access_token, 新版本为 token)
+            self.ms_api.login(ms_token)
             self.ms_token = ms_token
 
     @staticmethod

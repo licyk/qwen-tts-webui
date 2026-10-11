@@ -17,6 +17,9 @@ include = ["qwen_tts_webui*"]
 exclude = ["tests*", "docs*", "*__pycache__*", "*.pyc", "*.pyo", "*.pyd", ".git*", "__pycache__"]
 namespaces = true
 
+[tool.setuptools.package-data]
+"qwen_tts_webui.qwen_tts" = ["LICENSE", "NOTICE.md", "core/tokenizer_25hz/vq/assets/*.npz"]
+
 [tool.setuptools.exclude-package-data]
 "*" = ["__pycache__", "*.pyc", "*.pyo", "*.pyd", ".git*", ".github*", "tests*", "docs*"]
 
@@ -43,6 +46,12 @@ ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
 [tool.ruff]
 line-length = 180
 indent-width = 4
+# Vendored upstream Qwen3-TTS code (Apache-2.0), kept close to upstream to ease future syncs
+extend-exclude = [
+    "qwen_tts_webui/qwen_tts/__init__.py",
+    "qwen_tts_webui/qwen_tts/core",
+    "qwen_tts_webui/qwen_tts/inference",
+]
 lint.ignore = [
     "E402" # module-import-not-at-top-of-file
 ]

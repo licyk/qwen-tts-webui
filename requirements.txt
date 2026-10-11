@@ -1,7 +1,10 @@
 torch
 torchvision
 torchaudio
-qwen-tts>=0.1.1
+transformers==4.57.3
+accelerate==1.12.0
+librosa
+numpy
 psutil
 soundfile
 modelscope

@@ -28,11 +28,15 @@ logger = get_logger(
 )
 
 
-def create_api(app: "FastAPI") -> "Api":
+def create_api(
+    app: "FastAPI",
+    api_key: str | None = None,
+) -> "Api":
     """创建 API 实例
 
     Args:
         app (FastAPI): FastAPI 应用实例
+        api_key (str | None): API 访问密钥
 
     Returns:
         Api: API 实例
@@ -40,7 +44,9 @@ def create_api(app: "FastAPI") -> "Api":
     from qwen_tts_webui.api.api import Api
     from qwen_tts_webui.task_manager.call_queue import queue_lock
 
-    api = Api(app, queue_lock)
+    api = Api(app, queue_lock, api_key=api_key)
+    if api.api_key:
+        logger.info("API 已启用密钥鉴权")
     return api
 
 
@@ -55,17 +61,17 @@ def api_only() -> None:
 
     app = FastAPI(
         title="Qwen TTS API",
-        description="Qwen TTS WebUI API 接口",
+        description="Qwen TTS WebUI API 接口 (兼容 OpenAI Audio Speech API)",
         version=VERSION,
         docs_url="/docs",
         redoc_url="/redoc",
     )
-    api = create_api(app)
+    api = create_api(app, api_key=args.api_key)
 
     port = find_port(args.server_port)
     logger.info("Qwen TTS API 服务器已启动")
     logger.info("API 文档地址: http://%s:%d/docs", args.server_name, port)
-    logger.info("API 地址: http://%s:%d/qwenapi/v1/", args.server_name, port)
+    logger.info("API 地址 (兼容 OpenAI): http://%s:%d/v1", args.server_name, port)
 
     api.launch(server_name=args.server_name, port=port)
 
@@ -110,9 +116,9 @@ def webui() -> None:
 
     # 如果启用了 API, 则创建 API 路由
     if args.api:
-        create_api(app)
+        create_api(app, api_key=args.api_key)
         logger.info("API 已启用, API 文档地址: %s/docs", local_url)
-        logger.info("API 地址: %s/qwenapi/v1/", local_url)
+        logger.info("API 地址 (兼容 OpenAI): %s/v1", local_url)
 
     try:
         while True:

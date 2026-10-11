@@ -20,6 +20,7 @@ from qwen_tts_webui.config_manager.config import (
     QWEN_TTS_VOICE_DESIGN_MODEL_LIST,
     ATTN_IMPL_LIST,
 )
+from qwen_tts_webui.backend.errors import GenerationInterruptedError
 from qwen_tts_webui.backend.memory_manager import (
     MODEL_PRECISION_LIST,
     get_available_devices,
@@ -56,6 +57,47 @@ def update_token_counter(
         return f"<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: {token_count}</div>"
     except Exception as e:
         return f"<div style='color: #666; font-size: 0.9em; margin-bottom: 4px;'>Token 数量: 计算失败 ({str(e)})</div>"
+
+
+def load_selected_model(
+    model_name: str,
+) -> None:
+    """使用当前设置加载模型
+
+    Args:
+        model_name (str): 模型名称
+    """
+    get_backend().load_model(
+        model_name=model_name,
+        api_type=opts.api_type,
+        device_map=opts.device_map,
+        dtype=getattr(torch, opts.dtype.split(".")[-1]),
+        attn_implementation=opts.attn_implementation,
+        fast_generation=opts.fast_generation,
+        cuda_graph=opts.cuda_graph,
+    )
+
+
+def sampling_options() -> dict[str, Any]:
+    """获取当前设置中的采样参数
+
+    Returns:
+        dict[str, Any]: 采样参数
+    """
+    return {
+        "do_sample": opts.do_sample,
+        "top_k": opts.top_k,
+        "top_p": opts.top_p,
+        "temperature": opts.temperature,
+        "repetition_penalty": opts.repetition_penalty,
+        "subtalker_dosample": opts.subtalker_dosample,
+        "subtalker_top_k": opts.subtalker_top_k,
+        "subtalker_top_p": opts.subtalker_top_p,
+        "subtalker_temperature": opts.subtalker_temperature,
+        "max_new_tokens": opts.max_new_tokens,
+        "batch_size": opts.batch_size,
+        "should_stop": lambda: state.interrupted,
+    }
 
 
 def create_ui() -> gr.Blocks:
@@ -236,6 +278,11 @@ def create_ui() -> gr.Blocks:
                 dtype = gr.Dropdown(label="推理精度", choices=[str(p) for p in MODEL_PRECISION_LIST], value=str(opts.dtype))
                 attn_implementation = gr.Dropdown(label="加速方案", choices=[str(None)] + ATTN_IMPL_LIST, value=str(opts.attn_implementation))
 
+                gr.Markdown("### 生成加速设置")
+                fast_generation = gr.Checkbox(label="快速生成 (静态 KV Cache + GPU 采样 + 算子融合, 大幅提升生成速度)", value=opts.fast_generation)
+                cuda_graph = gr.Checkbox(label="使用 CUDA Graph (仅对 NVIDIA 显卡生效, 进一步降低 CPU 调度开销)", value=opts.cuda_graph)
+                batch_size = gr.Slider(label="分段生成的批量大小 (同时生成的段数, 显存不足时会自动减小)", minimum=1, maximum=16, step=1, value=opts.batch_size)
+
                 gr.Markdown("### 额外模型列表")
                 gr.Markdown("在下方输入框中每行输入一个模型名称或路径, 这些模型将会添加到对应功能的模型选择列表中")
                 extra_custom_voice_models = gr.Textbox(
@@ -274,6 +321,9 @@ def create_ui() -> gr.Blocks:
                     device_map_val: str,
                     dtype_val: str,
                     attn_impl_val: str,
+                    fast_generation_val: bool,
+                    cuda_graph_val: bool,
+                    batch_size_val: int,
                     extra_custom_voice_models_val: str,
                     extra_voice_design_models_val: str,
                     extra_voice_clone_models_val: str,
@@ -295,6 +345,9 @@ def create_ui() -> gr.Blocks:
                         device_map_val (str): 推理设备
                         dtype_val (str): 推理精度
                         attn_impl_val (str): 加速方案
+                        fast_generation_val (bool): 是否启用快速生成
+                        cuda_graph_val (bool): 是否使用 CUDA Graph
+                        batch_size_val (int): 分段生成的批量大小
                         extra_custom_voice_models_val (str): 声音生成额外模型列表
                         extra_voice_design_models_val (str): 声音设计额外模型列表
                         extra_voice_clone_models_val (str): 声音克隆额外模型列表
@@ -316,6 +369,9 @@ def create_ui() -> gr.Blocks:
                     opts.device_map = device_map_val
                     opts.dtype = dtype_val
                     opts.attn_implementation = None if attn_impl_val == str(None) else attn_impl_val
+                    opts.fast_generation = fast_generation_val
+                    opts.cuda_graph = cuda_graph_val
+                    opts.batch_size = int(batch_size_val)
                     # 处理额外模型列表: 按行分割并过滤空行
                     opts.extra_custom_voice_models = [x.strip() for x in extra_custom_voice_models_val.splitlines() if x.strip()]
                     opts.extra_voice_design_models = [x.strip() for x in extra_voice_design_models_val.splitlines() if x.strip()]
@@ -349,6 +405,9 @@ def create_ui() -> gr.Blocks:
                         device_map,
                         dtype,
                         attn_implementation,
+                        fast_generation,
+                        cuda_graph,
+                        batch_size,
                         extra_custom_voice_models,
                         extra_voice_design_models,
                         extra_voice_clone_models,
@@ -384,6 +443,9 @@ def create_ui() -> gr.Blocks:
                         str(opts.device_map),
                         str(opts.dtype),
                         str(opts.attn_implementation),
+                        opts.fast_generation,
+                        opts.cuda_graph,
+                        opts.batch_size,
                         "\n".join(opts.extra_custom_voice_models),
                         "\n".join(opts.extra_voice_design_models),
                         "\n".join(opts.extra_voice_clone_models),
@@ -410,6 +472,9 @@ def create_ui() -> gr.Blocks:
                         device_map,
                         dtype,
                         attn_implementation,
+                        fast_generation,
+                        cuda_graph,
+                        batch_size,
                         extra_custom_voice_models,
                         extra_voice_design_models,
                         extra_voice_clone_models,
@@ -514,35 +579,20 @@ def create_ui() -> gr.Blocks:
             try:
                 start_time = time.perf_counter()
                 gr.Info(f"加载 {model_name} 模型中")
-                get_backend().load_model(
-                    model_name=model_name,
-                    api_type=opts.api_type,
-                    device_map=opts.device_map,
-                    dtype=getattr(torch, opts.dtype.split(".")[-1]),
-                    attn_implementation=opts.attn_implementation,
-                )
+                load_selected_model(model_name)
                 actual_speaker, actual_language, speaker_update, language_update = update_metadata(speaker, language)
-                for i, t in enumerate(text_list, start=1):
-                    gr.Info(f"生成音频中 ({i}/{len(text_list)})")
-                    output_path = get_backend().generate_custom_voice(
-                        text=t,
+                gr.Info(f"生成音频中 (共 {len(text_list)} 段)")
+                try:
+                    result = get_backend().generate_custom_voice(
+                        text=text_list,
                         speaker=actual_speaker,
                         language=actual_language,
                         instruct=instruct,
-                        do_sample=opts.do_sample,
-                        top_k=opts.top_k,
-                        top_p=opts.top_p,
-                        temperature=opts.temperature,
-                        repetition_penalty=opts.repetition_penalty,
-                        subtalker_dosample=opts.subtalker_dosample,
-                        subtalker_top_k=opts.subtalker_top_k,
-                        subtalker_top_p=opts.subtalker_top_p,
-                        subtalker_temperature=opts.subtalker_temperature,
-                        max_new_tokens=opts.max_new_tokens,
+                        **sampling_options(),
                     )
-                    if state.interrupted:
-                        return None, speaker_update, language_update
-                    output_paths.append(str(output_path))
+                except GenerationInterruptedError:
+                    return None, speaker_update, language_update
+                output_paths.extend(str(p) for p in result.paths)
 
                 gr.Info(f"音频生成完成, 耗时: {(time.perf_counter() - start_time):.2f}s")
                 return output_paths, speaker_update, language_update
@@ -582,34 +632,19 @@ def create_ui() -> gr.Blocks:
             try:
                 start_time = time.perf_counter()
                 gr.Info(f"加载 {model_name} 模型中")
-                get_backend().load_model(
-                    model_name=model_name,
-                    api_type=opts.api_type,
-                    device_map=opts.device_map,
-                    dtype=getattr(torch, opts.dtype.split(".")[-1]),
-                    attn_implementation=opts.attn_implementation,
-                )
+                load_selected_model(model_name)
                 actual_language, language_update = update_metadata_simple(language)
-                for i, t in enumerate(text_list, start=1):
-                    gr.Info(f"生成音频中 ({i}/{len(text_list)})")
-                    output_path = get_backend().generate_voice_design(
-                        text=t,
+                gr.Info(f"生成音频中 (共 {len(text_list)} 段)")
+                try:
+                    result = get_backend().generate_voice_design(
+                        text=text_list,
                         instruct=instruct,
                         language=actual_language,
-                        do_sample=opts.do_sample,
-                        top_k=opts.top_k,
-                        top_p=opts.top_p,
-                        temperature=opts.temperature,
-                        repetition_penalty=opts.repetition_penalty,
-                        subtalker_dosample=opts.subtalker_dosample,
-                        subtalker_top_k=opts.subtalker_top_k,
-                        subtalker_top_p=opts.subtalker_top_p,
-                        subtalker_temperature=opts.subtalker_temperature,
-                        max_new_tokens=opts.max_new_tokens,
+                        **sampling_options(),
                     )
-                    if state.interrupted:
-                        return None, language_update
-                    output_paths.append(str(output_path))
+                except GenerationInterruptedError:
+                    return None, language_update
+                output_paths.extend(str(p) for p in result.paths)
 
                 gr.Info(f"音频生成完成, 耗时: {(time.perf_counter() - start_time):.2f}s")
                 return output_paths, language_update
@@ -655,36 +690,21 @@ def create_ui() -> gr.Blocks:
             try:
                 start_time = time.perf_counter()
                 gr.Info(f"加载 {model_name} 模型中")
-                get_backend().load_model(
-                    model_name=model_name,
-                    api_type=opts.api_type,
-                    device_map=opts.device_map,
-                    dtype=getattr(torch, opts.dtype.split(".")[-1]),
-                    attn_implementation=opts.attn_implementation,
-                )
+                load_selected_model(model_name)
                 actual_language, language_update = update_metadata_simple(language)
-                for i, t in enumerate(text_list, start=1):
-                    gr.Info(f"生成音频中 ({i}/{len(text_list)})")
-                    output_path = get_backend().generate_voice_clone(
-                        text=t,
+                gr.Info(f"生成音频中 (共 {len(text_list)} 段)")
+                try:
+                    result = get_backend().generate_voice_clone(
+                        text=text_list,
                         language=actual_language,
                         ref_audio=Path(ref_audio),
                         ref_text=ref_text,
                         x_vector_only_mode=(ref_text is None or ref_text.strip() == ""),
-                        do_sample=opts.do_sample,
-                        top_k=opts.top_k,
-                        top_p=opts.top_p,
-                        temperature=opts.temperature,
-                        repetition_penalty=opts.repetition_penalty,
-                        subtalker_dosample=opts.subtalker_dosample,
-                        subtalker_top_k=opts.subtalker_top_k,
-                        subtalker_top_p=opts.subtalker_top_p,
-                        subtalker_temperature=opts.subtalker_temperature,
-                        max_new_tokens=opts.max_new_tokens,
+                        **sampling_options(),
                     )
-                    if state.interrupted:
-                        return None, language_update
-                    output_paths.append(str(output_path))
+                except GenerationInterruptedError:
+                    return None, language_update
+                output_paths.extend(str(p) for p in result.paths)
 
                 gr.Info(f"音频生成完成, 耗时: {(time.perf_counter() - start_time):.2f}s")
                 return output_paths, language_update

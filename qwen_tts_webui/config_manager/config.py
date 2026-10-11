@@ -24,6 +24,9 @@ OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 CONFIG_PATH = ROOT_PATH / "config.json"
 """配置文件路径"""
 
+VOICES_PATH = ROOT_PATH / "voices"
+"""通过 API 注册的声音克隆参考音频的保存路径"""
+
 QWEN_TTS_BASE_MODEL_LIST = [
     "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
     "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
@@ -40,6 +43,30 @@ QWEN_TTS_VOICE_DESIGN_MODEL_LIST = [
     "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
 ]
 """Qwen TTS 声音设计模型"""
+
+OPENAI_MODEL_ALIASES = {
+    "tts-1": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+    "tts-1-hd": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+    "gpt-4o-mini-tts": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+}
+"""OpenAI 模型名称到 Qwen TTS 模型的映射, 方便直接使用 OpenAI 客户端的默认模型名称"""
+
+OPENAI_VOICE_ALIASES = {
+    "alloy": "vivian",
+    "ash": "ryan",
+    "ballad": "ryan",
+    "cedar": "uncle_fu",
+    "coral": "serena",
+    "echo": "aiden",
+    "fable": "aiden",
+    "marin": "serena",
+    "nova": "vivian",
+    "onyx": "uncle_fu",
+    "sage": "serena",
+    "shimmer": "serena",
+    "verse": "ryan",
+}
+"""OpenAI 发言人名称到 Qwen TTS 声音生成模型发言人的映射"""
 
 ATTN_IMPL_LIST = [
     "eager",
