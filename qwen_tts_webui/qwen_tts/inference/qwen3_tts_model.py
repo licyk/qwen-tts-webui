@@ -27,6 +27,7 @@ import torch
 from transformers import AutoConfig, AutoModel, AutoProcessor
 
 from ..core.models import Qwen3TTSConfig, Qwen3TTSForConditionalGeneration, Qwen3TTSProcessor
+from ..device_utils import execution_device
 from ..fast_generation import Qwen3TTSFastGenerator
 
 AudioLike = Union[
@@ -73,12 +74,8 @@ class Qwen3TTSModel:
         self.processor = processor
         self.generate_defaults = generate_defaults or {}
 
-        self.device = getattr(model, "device", None)
-        if self.device is None:
-            try:
-                self.device = next(model.parameters()).device
-            except StopIteration:
-                self.device = torch.device("cpu")
+        # [qwen-tts-webui] Execution device (offloaded parameters live on `meta`), see `device_utils.py`.
+        self.device = execution_device(model)
 
     @classmethod
     def from_pretrained(

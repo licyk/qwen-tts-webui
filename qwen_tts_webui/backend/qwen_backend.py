@@ -18,12 +18,14 @@ import soundfile as sf
 import torch
 from modelscope import snapshot_download
 
+from qwen_tts_webui.backend.device_planner import cpu_inference_dtype, gpu_free_memory, plan_device_map
 from qwen_tts_webui.backend.errors import GenerationInterruptedError
 from qwen_tts_webui.backend.memory_manager import (
     OutOfMemoryError,
     cleanup_models,
     get_free_memory,
     get_torch_device,
+    is_out_of_memory_error,
 )
 from qwen_tts_webui.config_manager.config import (
     LOGGER_COLOR,
@@ -166,6 +168,8 @@ class QwenTTSBackend:
         self.model_name = None
         self.model: Qwen3TTSModel | None = None
         self.load_signature: tuple[Any, ...] | None = None
+        self.cuda_graph_disabled = False
+        """当前模型在显存不足时已关闭 CUDA Graph, 重新加载模型前不再启用"""
         self.voice_clone_prompts: OrderedDict[tuple[Any, ...], list[VoiceClonePromptItem]] = OrderedDict()
         self.hub = HubManager(
             hf_token=os.getenv("HF_TOKEN"),
@@ -183,6 +187,7 @@ class QwenTTSBackend:
         self.model = None
         self.model_name = None
         self.load_signature = None
+        self.cuda_graph_disabled = False
         # cuBLAS 的工作区由 PyTorch 显存分配器在首次矩阵乘法时分配, 会长期占用并导致其所在的大块显存 (模型权重释放后留下的) 无法被回收
         if torch.cuda.is_available() and hasattr(torch._C, "_cuda_clearCublasWorkspaces"):
             torch._C._cuda_clearCublasWorkspaces()  # pylint: disable=protected-access
@@ -251,41 +256,52 @@ class QwenTTSBackend:
         self,
         device_map: str | None,
         model_path: str,
-    ) -> str | None:
+        dtype: torch.dtype | None,
+    ) -> str | dict[str, int | str] | None:
         """解析推理设备
 
-        `auto` 会让 Accelerate 将模型平均拆分到所有显卡上, 对于这种体积较小并且逐 Token 自回归解码的模型,
-        跨设备拆分只会增加通信开销并降低显卡利用率, 因此在单张显卡能放下模型时, 优先选择空闲显存最多的显卡.
+        - `auto`: 单张显卡能放下模型时, 使用空闲显存最多的显卡 (跨设备拆分只会增加开销); 放不下时, 将每帧都会使用的模块
+          放在该显卡上, 其余 Decoder Layer 依次放到其他显卡或者卸载到 CPU (Accelerate 默认的分配方式会最先卸载这些模块, 生成速度极慢).
+        - 指定 CUDA 显卡时, 显存不足则按同样的方式将部分 Decoder Layer 卸载到 CPU, 而不是直接加载失败.
 
         Args:
             device_map (str | None):
                 用户设置的推理设备
             model_path (str):
                 模型的本地路径
+            dtype (torch.dtype | None):
+                加载精度
 
         Returns:
-            (str | None): 实际使用的推理设备
+            (str | dict[str, int | str] | None): 实际使用的推理设备或者设备映射
         """
-        if device_map not in (None, "auto"):
+        explicit_cuda = isinstance(device_map, str) and device_map.startswith("cuda") and torch.cuda.is_available()
+        if device_map not in (None, "auto") and not explicit_cuda:
             return device_map
 
-        device = get_torch_device()
-        if device.type == "cpu":
+        if explicit_cuda:
+            index = torch.device(device_map).index
+            index = torch.cuda.current_device() if index is None else index
+            candidates = [(torch.cuda.mem_get_info(index)[0], index)]
+        else:
+            device = get_torch_device()
+            if device.type == "cpu":
+                return device_map
+            if device.type != "cuda":
+                logger.info("推理设备自动选择: %s", device)
+                return str(device)
+            candidates = gpu_free_memory()
+
+        try:
+            plan = plan_device_map(model_path, dtype or torch.bfloat16, candidates)
+        except Exception as e:
+            logger.warning("生成设备分配方案失败, 使用 %s 加载模型: %s", device_map, e)
             return device_map
-
-        if device.type != "cuda":
-            logger.info("推理设备自动选择: %s", device)
-            return str(device)
-
-        model_bytes = sum(p.stat().st_size for p in Path(model_path).rglob("*.safetensors"))
-        required = model_bytes * 1.2 + 1024**3
-        free, index = max((torch.cuda.mem_get_info(i)[0], i) for i in range(torch.cuda.device_count()))
-        if free >= required:
-            logger.info("推理设备自动选择: cuda:%d (空闲显存 %.2f GB, 模型需要约 %.2f GB)", index, free / 1024**3, required / 1024**3)
-            return f"cuda:{index}"
-
-        logger.info("单张显卡的空闲显存不足以加载模型 (需要约 %.2f GB), 使用 auto 设备分配", required / 1024**3)
-        return device_map
+        if isinstance(plan.device_map, dict) or plan.device_map == "cpu":
+            logger.warning("%s", plan.description)
+        else:
+            logger.info("推理设备自动选择: %s", plan.description)
+        return plan.device_map
 
     def load_model(
         self,
@@ -347,10 +363,15 @@ class QwenTTSBackend:
         model_path = self._download_model(model_name, api_type)
 
         def load(path: str) -> Qwen3TTSModel:
+            resolved = self._resolve_device_map(device_map, path, dtype)
+            load_dtype = dtype
+            if resolved == "cpu" and cpu_inference_dtype(dtype) != dtype:
+                load_dtype = cpu_inference_dtype(dtype)
+                logger.info("CPU 不支持原生 %s 计算, 使用 %s 精度在 CPU 上进行推理 (速度更快)", dtype, load_dtype)
             return Qwen3TTSModel.from_pretrained(
                 pretrained_model_name_or_path=path,
-                device_map=self._resolve_device_map(device_map, path),
-                dtype=dtype,
+                device_map=resolved,
+                dtype=load_dtype,
                 attn_implementation=attn_implementation,
                 fast_generation=fast_generation,
                 use_cuda_graph=cuda_graph,
@@ -358,11 +379,6 @@ class QwenTTSBackend:
 
         try:
             self.model = load(model_path)
-        except OutOfMemoryError as e:
-            logger.error("加载 Qwen TTS 模型 %s 时发生内存不足: %s", self.model_name, e)
-            tmp_name = self.model_name
-            self.unload_model()
-            raise OutOfMemoryError(f"加载 Qwen TTS 模型 {tmp_name} 时发生内存不足: {e}") from e
         except OSError as e:  # pylint: disable=bad-except-order
             logger.warning("加载 Qwen TTS 模型 %s 时因模型文件损坏发生错误: %s", self.model_name, e)
             tmp_name = self.model_name
@@ -386,8 +402,12 @@ class QwenTTSBackend:
                 self.unload_model()
                 raise RuntimeError(f"重新下载 Qwen TTS 模型 {tmp_name} 时发生错误: {retry_e}") from retry_e
         except Exception as e:  # pylint: disable=duplicate-except
-            logger.error("加载 Qwen TTS 模型 %s 时发生未知错误: %s", self.model_name, e)
             tmp_name = self.model_name
+            if is_out_of_memory_error(e):
+                logger.error("加载 Qwen TTS 模型 %s 时发生内存不足: %s", self.model_name, e)
+                self.unload_model()
+                raise OutOfMemoryError(f"加载 Qwen TTS 模型 {tmp_name} 时发生内存不足: {e}") from e
+            logger.error("加载 Qwen TTS 模型 %s 时发生未知错误: %s", self.model_name, e)
             try:
                 self.unload_model()
             except Exception:
@@ -410,6 +430,7 @@ class QwenTTSBackend:
             cuda_graph (bool):
                 是否使用 CUDA Graph
         """
+        cuda_graph = cuda_graph and not self.cuda_graph_disabled
         generator = getattr(self.model.model, "fast_generator", None)
         current = (generator is not None, generator is not None and generator.use_cuda_graph)
         wanted_graph = cuda_graph and (generator.single_device and generator.main_device.type == "cuda" if generator is not None else True)
@@ -417,6 +438,20 @@ class QwenTTSBackend:
             return
         logger.info("切换快速解码设置: fast_generation=%s, cuda_graph=%s", fast_generation, cuda_graph)
         self.model.set_fast_generation(fast_generation, use_cuda_graph=cuda_graph)
+
+    def _disable_cuda_graph(self) -> bool:
+        """显存不足时关闭当前模型的 CUDA Graph (CUDA Graph 需要额外的显存池)
+
+        Returns:
+            bool: 是否关闭了 CUDA Graph (未使用 CUDA Graph 时返回 False)
+        """
+        generator = getattr(self.model.model, "fast_generator", None) if self.model is not None else None
+        if generator is None or not generator.use_cuda_graph:
+            return False
+        self.cuda_graph_disabled = True
+        self.model.set_fast_generation(True, use_cuda_graph=False)
+        cleanup_models()
+        return True
 
     def get_supported_speakers(
         self,
@@ -534,16 +569,25 @@ class QwenTTSBackend:
                 chunk_wavs, sample_rate = call(chunk, extra)
             except GenerationStoppedError as e:
                 raise GenerationInterruptedError("任务已中断") from e
-            except OutOfMemoryError as e:
-                if batch_size == 1:
-                    logger.error("调用 Qwen TTS 模型 %s 进行音频合成时发生内存不足: %s", self.model_name, e)
-                    self.unload_model()
+            except Exception as e:
+                if not is_out_of_memory_error(e):
                     raise
-                batch_size = max(1, batch_size // 2)
-                logger.warning("生成音频时显存不足, 将批量大小减小为 %d 后重试", batch_size)
                 self.model.release_fast_generation()
                 cleanup_models()
-                continue
+                # 流式输出时已经输出的音频无法撤回, 不能重试
+                retry = decoder is None or decoder.emitted == 0
+                if retry and batch_size > 1:
+                    batch_size = max(1, batch_size // 2)
+                    logger.warning("生成音频时显存不足, 将批量大小减小为 %d 后重试", batch_size)
+                    continue
+                if retry and self._disable_cuda_graph():
+                    logger.warning("生成音频时显存不足, 关闭 CUDA Graph 后重试")
+                    continue
+                logger.error("调用 Qwen TTS 模型 %s 进行音频合成时发生内存不足: %s", self.model_name, e)
+                self.unload_model()
+                if isinstance(e, OutOfMemoryError) and OutOfMemoryError is not Exception:
+                    raise
+                raise OutOfMemoryError(f"生成音频时显存不足: {e}") from e
             if should_stop is not None and should_stop():
                 raise GenerationInterruptedError("任务已中断")
             if decoder is not None and not decoder.finished:

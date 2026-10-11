@@ -26,6 +26,7 @@ import torch
 from torch.nn.utils.rnn import pad_sequence
 from transformers import AutoConfig, AutoFeatureExtractor, AutoModel
 
+from ..device_utils import execution_device
 from ..core import (
     Qwen3TTSTokenizerV1Config,
     Qwen3TTSTokenizerV2Config,
@@ -89,13 +90,8 @@ class Qwen3TTSTokenizer:
         inst.model = AutoModel.from_pretrained(pretrained_model_name_or_path, **kwargs)
         inst.config = inst.model.config
 
-        inst.device = getattr(inst.model, "device", None)
-        if inst.device is None:
-            # fallback: infer from first parameter device
-            try:
-                inst.device = next(inst.model.parameters()).device
-            except StopIteration:
-                inst.device = torch.device("cpu")
+        # [qwen-tts-webui] Execution device (offloaded parameters live on `meta`), see `device_utils.py`.
+        inst.device = execution_device(inst.model)
 
         return inst
 

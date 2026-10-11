@@ -299,6 +299,27 @@ except Exception as _:
     OutOfMemoryError = Exception
     """内存溢出错误"""
 
+
+def is_out_of_memory_error(
+    e: BaseException,
+) -> bool:
+    """判断异常是否为显存 / 内存不足
+
+    除了 `torch.OutOfMemoryError` 以外, 创建 CUDA Stream 或者捕获 CUDA Graph 等操作在显存不足时会抛出
+    `torch.AcceleratorError: CUDA error: out of memory`, 也需要视为显存不足
+
+    Args:
+        e (BaseException):
+            异常
+
+    Returns:
+        bool: 是否为显存 / 内存不足
+    """
+    if OutOfMemoryError is not Exception and isinstance(e, OutOfMemoryError):
+        return True
+    return isinstance(e, RuntimeError) and "out of memory" in str(e).lower()
+
+
 MODEL_PRECISION_LIST = [
     torch.float16,
     torch.float32,

@@ -18,7 +18,15 @@ Modified upstream code is marked with `[qwen-tts-webui]` comments.
   when it is enabled; the original HuggingFace path is kept as a fallback. `device_map="auto"` fixes: decoder layers and
   the code predictor are no longer split across devices (`_no_split_modules`), and the speech tokenizer is loaded on a
   single device next to the talker when the model is spread over several devices.
+- `device_utils.py` (new): `execution_device()` returns the device a module actually runs on (accelerate hook
+  execution device) instead of the device of its first parameter, which is `meta` for modules offloaded by
+  accelerate. Upstream failed with `Tensor.item() cannot be called on meta tensors` when `device_map="auto"`
+  offloaded part of the model (e.g. on GPUs with limited memory).
+- `core/models/modeling_qwen3_tts.py`: the `device` property of `Qwen3TTSPreTrainedModel` and
+  `Qwen3TTSTalkerTextPreTrainedModel` returns the execution device (used by HF `generate()` of the talker and the
+  code predictor); the speech tokenizer is placed with the execution device as well.
 - `inference/qwen3_tts_model.py`: `fast_generation` / `use_cuda_graph` / `fuse_layers` loading options,
-  `set_fast_generation()` and `release_fast_generation()`; Auto* registrations use `exist_ok=True`.
+  `set_fast_generation()` and `release_fast_generation()`; Auto* registrations use `exist_ok=True`; the wrapper's
+  `device` is the execution device (also in `inference/qwen3_tts_tokenizer.py`).
 - `core/__init__.py`, `inference/qwen3_tts_tokenizer.py`: the 25Hz tokenizer model (which needs the optional
   `sox`, `onnxruntime`, `einops` and `flash-attn` packages) is imported lazily, only when such a tokenizer is loaded.

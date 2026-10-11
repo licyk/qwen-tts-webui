@@ -44,6 +44,7 @@ from transformers.utils import can_return_tuple, logging
 from transformers.utils.hub import cached_file
 
 from ...inference.qwen3_tts_tokenizer import Qwen3TTSTokenizer
+from ...device_utils import execution_device, is_single_device_map
 from .configuration_qwen3_tts import (Qwen3TTSConfig,
                                       Qwen3TTSSpeakerEncoderConfig,
                                       Qwen3TTSTalkerCodePredictorConfig,
@@ -476,6 +477,13 @@ class Qwen3TTSPreTrainedModel(PreTrainedModel):
     _supports_static_cache = False
     _supports_attention_backend = True
 
+    # [qwen-tts-webui] With accelerate CPU/disk offload (device_map="auto" on a small GPU), parameters of offloaded
+    # modules are `meta` placeholders, so the default `device` (first parameter) may be `meta` and HF `generate()`
+    # creates its state there ("Tensor.item() cannot be called on meta tensors"). Report the execution device instead.
+    @property
+    def device(self) -> torch.device:
+        return execution_device(self)
+
     def _init_weights(self, module):
         # important: this ported version of Qwen2.5OmniThinker isn't meant for training from scratch - only
         # inference and fine-tuning - so the proper init weights code has been removed
@@ -510,6 +518,13 @@ class Qwen3TTSTalkerTextPreTrainedModel(PreTrainedModel):
     _supports_quantized_cache = True
     _supports_static_cache = False
     _supports_attention_backend = True
+
+    # [qwen-tts-webui] With accelerate CPU/disk offload (device_map="auto" on a small GPU), parameters of offloaded
+    # modules are `meta` placeholders, so the default `device` (first parameter) may be `meta` and HF `generate()`
+    # creates its state there ("Tensor.item() cannot be called on meta tensors"). Report the execution device instead.
+    @property
+    def device(self) -> torch.device:
+        return execution_device(self)
 
     def _init_weights(self, module):
         std = self.config.initializer_range
@@ -1916,11 +1931,12 @@ class Qwen3TTSForConditionalGeneration(Qwen3TTSPreTrainedModel, GenerationMixin)
         if speech_tokenizer_path is None:
             raise ValueError(f"""{pretrained_model_name_or_path}/{speech_tokenizer_path} not exists""")
         speech_tokenizer_dir = os.path.dirname(speech_tokenizer_path)
-        # [qwen-tts-webui] The speech tokenizer is small and its decoder cannot run split across devices, so when the
-        # main model is spread over several devices, load the tokenizer as a whole next to the talker.
+        # [qwen-tts-webui] The speech tokenizer is small and its decoder cannot run split across devices, so unless the
+        # main model was loaded onto a single device, load the tokenizer as a whole on the talker's execution device
+        # (a device map dict / "auto" does not describe the tokenizer's modules, and offloaded weights live on `meta`).
         tokenizer_kwargs = dict(kwargs)
-        if len({p.device for p in model.parameters()}) > 1:
-            tokenizer_kwargs["device_map"] = str(model.talker.model.codec_embedding.weight.device)
+        if not is_single_device_map(tokenizer_kwargs.get("device_map")):
+            tokenizer_kwargs["device_map"] = str(execution_device(model.talker.model.codec_embedding))
         speech_tokenizer = Qwen3TTSTokenizer.from_pretrained(
             speech_tokenizer_dir,
             *model_args,

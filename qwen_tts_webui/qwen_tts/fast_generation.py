@@ -27,6 +27,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from .device_utils import execution_device
+
 _KV_BUCKET = 256
 """Talker 注意力窗口的分桶大小, 每个分桶对应一个 CUDA Graph"""
 
@@ -439,10 +441,13 @@ class Qwen3TTSFastGenerator:
         self.vocab_size = talker_config.vocab_size
         self.cp_vocab_size = self.code_predictor.config.vocab_size
 
-        self.main_device = self.talker.model.codec_embedding.weight.device
+        # 使用实际计算设备: 显存不足时 Accelerate 会将部分模块卸载到 CPU, 这些模块的参数位于 meta 设备上
+        self.main_device = execution_device(self.talker.model.codec_embedding)
         self.dtype = self.talker.model.codec_embedding.weight.dtype
         devices = {p.device for p in self.talker.parameters()}
-        self.single_device = len(devices) == 1
+        self.offloaded = any(d.type == "meta" for d in devices)
+        """是否有权重被卸载 (由 Accelerate Hook 在前向计算时拷贝到计算设备上), 此时只能使用上游的 Decoder Layer, 并且不能使用 CUDA Graph"""
+        self.single_device = len(devices) == 1 and not self.offloaded
         self.use_cuda_graph = bool(use_cuda_graph) and self.single_device and self.main_device.type == "cuda"
 
         self.workspaces: OrderedDict[int, _Workspace] = OrderedDict()
@@ -460,7 +465,7 @@ class Qwen3TTSFastGenerator:
         self.attn_configs = list(attn_configs.values())
 
         # Code Predictor 每一步的写入位置 / 位置编码 / 注意力掩码均为常量
-        dev = self.code_predictor.lm_head[0].weight.device
+        dev = execution_device(self.code_predictor)
         self.cp_device = dev
         self.cp_write_pos = [torch.arange(0, 2, device=dev)] + [torch.tensor([j + 1], device=dev) for j in range(1, self.num_code_groups - 1)]
         self.cp_position_ids = [torch.arange(0, 2, device=dev).unsqueeze(0)] + [torch.tensor([[j + 1]], device=dev) for j in range(1, self.num_code_groups - 1)]
@@ -511,7 +516,7 @@ class Qwen3TTSFastGenerator:
         self,
         layer: torch.nn.Module,
     ) -> torch.device:
-        return layer.self_attn.k_proj.weight.device
+        return execution_device(layer)
 
     def _new_cache(
         self,

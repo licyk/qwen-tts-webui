@@ -37,7 +37,7 @@ from fastapi.routing import APIRoute
 
 from qwen_tts_webui.api import models
 from qwen_tts_webui.backend.errors import GenerationInterruptedError
-from qwen_tts_webui.backend.memory_manager import OutOfMemoryError
+from qwen_tts_webui.backend.memory_manager import is_out_of_memory_error
 from qwen_tts_webui.config_manager.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
@@ -659,7 +659,7 @@ class Api:
             return e
         if isinstance(e, GenerationInterruptedError):
             return OpenAIError(503, "The generation was interrupted", error_type="server_error", code="generation_interrupted")
-        if isinstance(e, OutOfMemoryError):
+        if is_out_of_memory_error(e):
             return OpenAIError(503, f"Not enough memory to generate audio: {e}", error_type="server_error", code="out_of_memory")
         if isinstance(e, ValueError):
             return OpenAIError(400, str(e))
