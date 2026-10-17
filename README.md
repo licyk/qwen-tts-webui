@@ -20,6 +20,9 @@ _✨生成音频如此简单_
 
 </div>
 
+> [!IMPORTANT]
+> 推荐使用 [Mizuoto TTS WebUI](https://github.com/licyk/mizuoto-tts-webui)，该项目已包含 Qwen TTS 支持，功能更丰富，使用也更方便。
+
 - [Qwen TTS WebUI](#qwen-tts-webui)
 - [简介](#简介)
 - [安装](#安装)
